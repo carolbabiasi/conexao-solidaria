@@ -402,3 +402,7 @@ FodyWeavers.xsd
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Variaveis de ambiente locais (docker compose) - contem senhas
+.env
+docker/.env
