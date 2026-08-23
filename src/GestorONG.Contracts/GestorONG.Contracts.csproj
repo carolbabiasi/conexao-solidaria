@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Contratos de mensageria compartilhados entre a API (producer) e o Worker (consumer).
+    Nao deve referenciar Domain nem Infrastructure.
+  -->
+
+</Project>
