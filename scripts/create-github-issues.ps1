@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Cria labels, milestones e issues do backlog do hackathon no GitHub.
 
