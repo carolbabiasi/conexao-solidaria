@@ -1,0 +1,27 @@
+[
+  { "name": "epico:fundacao",        "color": "5A5A5A", "description": "Épico 0 — Fundação do repositório" },
+  { "name": "epico:dominio",         "color": "1D76DB", "description": "Épico 1 — Domínio" },
+  { "name": "epico:persistencia",    "color": "0052CC", "description": "Épico 2 — Persistência" },
+  { "name": "epico:auth",            "color": "5319E7", "description": "Épico 3 — Autenticação e Autorização" },
+  { "name": "epico:campanhas",       "color": "006B75", "description": "Épico 4 — Gestão de Campanhas" },
+  { "name": "epico:painel-publico",  "color": "0E8A16", "description": "Épico 5 — Painel de Transparência" },
+  { "name": "epico:mensageria",      "color": "B60205", "description": "Épico 6 — Doação e Mensageria" },
+  { "name": "epico:kubernetes",      "color": "1F6FEB", "description": "Épico 7 — Containerização e Kubernetes" },
+  { "name": "epico:observabilidade", "color": "D4A017", "description": "Épico 8 — Observabilidade" },
+  { "name": "epico:cicd",            "color": "8250DF", "description": "Épico 9 — CI/CD" },
+  { "name": "epico:entregaveis",     "color": "E99695", "description": "Épico 10 — Entregáveis avaliados" },
+  { "name": "epico:bonus",           "color": "C2E0C6", "description": "Épico 11 — Bônus" },
+
+  { "name": "prioridade:bloqueante", "color": "B60205", "description": "Bloqueia outras frentes" },
+  { "name": "prioridade:obrigatorio","color": "D93F0B", "description": "Requisito obrigatório do edital" },
+  { "name": "prioridade:entregavel", "color": "FBCA04", "description": "Entregável avaliado diretamente" },
+  { "name": "prioridade:bonus",      "color": "0E8A16", "description": "Opcional, sem impacto na nota" },
+
+  { "name": "tam:P",  "color": "C5DEF5", "description": "Até 2h" },
+  { "name": "tam:M",  "color": "8AB4E8", "description": "Meio dia" },
+  { "name": "tam:G",  "color": "5B8FD9", "description": "1 dia" },
+  { "name": "tam:GG", "color": "2E5CA8", "description": "2+ dias" },
+
+  { "name": "risco", "color": "E4B106", "description": "Mitiga um risco mapeado (R1–R10) na análise" },
+  { "name": "caminho-critico", "color": "FF6B00", "description": "Está no caminho crítico da demo" }
+]

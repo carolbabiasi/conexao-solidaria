@@ -1,0 +1,577 @@
+{
+  "milestones": [
+    { "title": "Fase 1 — Fundação",        "description": "Repo, solução, compose local e CI mínimo no ar." },
+    { "title": "Fase 2 — Núcleo",          "description": "Domínio, persistência e autenticação funcionando local." },
+    { "title": "Fase 3 — Fluxo de valor",  "description": "Campanhas, painel público e doação assíncrona ponta a ponta." },
+    { "title": "Fase 4 — Infra de entrega","description": "Docker, Kubernetes, observabilidade e CI publicando imagem." },
+    { "title": "Fase 5 — Entrega",         "description": "Documentação, diagrama, Postman e vídeo." },
+    { "title": "Fase 6 — Bônus",           "description": "Itens opcionais, sem impacto na nota." }
+  ],
+  "issues": [
+
+    {
+      "id": "INFRA-01",
+      "title": "INFRA-01 · git init, .gitignore e repositório público no GitHub",
+      "milestone": "Fase 1 — Fundação",
+      "labels": ["epico:fundacao", "prioridade:bloqueante", "tam:P"],
+      "body": "## Contexto\nO diretório `GestorONG/` ainda não é um repositório Git. Existem `.vs/`, `bin/` e `obj/` soltos, que não podem ser versionados. O edital exige **repositório de código público**.\n\n## Escopo\n- [ ] `git init` na raiz `GestorONG/`\n- [ ] Gerar `.gitignore` do .NET (`dotnet new gitignore`) e acrescentar `.vs/`\n- [ ] Garantir que `bin/`, `obj/` e `.vs/` não entrem no índice\n- [ ] Criar repositório **público** no GitHub e fazer o primeiro push na `main`\n- [ ] Proteger a `main` exigindo PR (opcional, mas evita push quebrado durante o hackathon)\n\n## Critério de aceite\n- [ ] `git status` fica limpo após um `dotnet build`\n- [ ] Repositório acessível publicamente sem login\n\n## Dependências\nNenhuma.\n\n---\n`docs/BACKLOG.md` § ÉPICO 0"
+    },
+    {
+      "id": "INFRA-02",
+      "title": "INFRA-02 · Reorganizar a solução em src/ e tests/",
+      "milestone": "Fase 1 — Fundação",
+      "labels": ["epico:fundacao", "prioridade:bloqueante", "tam:M"],
+      "body": "## Contexto\nHoje existe apenas `GestorONG.API/GestorONG.API/` — template Web API .NET 10 vazio, `Controllers/` sem nada e único pacote `Microsoft.AspNetCore.OpenApi`. A estrutura precisa comportar 2 microsserviços e um domínio testável.\n\n## Escopo\n- [ ] Mover o projeto atual para `src/GestorONG.API/`\n- [ ] Criar `src/GestorONG.Domain` (classlib)\n- [ ] Criar `src/GestorONG.Application` (classlib)\n- [ ] Criar `src/GestorONG.Infrastructure` (classlib)\n- [ ] Criar `src/GestorONG.Contracts` (classlib)\n- [ ] Criar `src/GestorONG.Worker` (`Microsoft.NET.Sdk.Worker`)\n- [ ] Criar `tests/GestorONG.Domain.Tests` (xUnit)\n- [ ] Referências: `Application` → `Domain`; `Infrastructure` → `Application`; `API` e `Worker` → `Infrastructure` + `Contracts`\n- [ ] Atualizar `GestorONG.API.slnx` com todos os projetos\n\n## Critério de aceite\n- [ ] `dotnet build` limpo na raiz\n- [ ] `GestorONG.Domain.csproj` **sem nenhum** `ProjectReference` ou `PackageReference`\n\n## Dependências\n{{INFRA-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 0"
+    },
+    {
+      "id": "INFRA-03",
+      "title": "INFRA-03 · Directory.Build.props e versionamento central de pacotes",
+      "milestone": "Fase 1 — Fundação",
+      "labels": ["epico:fundacao", "prioridade:bloqueante", "tam:P"],
+      "body": "## Contexto\nCom 7 projetos, versão de pacote divergente entre eles é fonte garantida de bug chato. Centralizar agora custa 20 minutos.\n\n## Escopo\n- [ ] `Directory.Build.props` na raiz: `TargetFramework net10.0`, `Nullable enable`, `ImplicitUsings enable`, `TreatWarningsAsErrors true`, `LangVersion latest`\n- [ ] `Directory.Packages.props` com `ManagePackageVersionsCentrally true`\n- [ ] Remover as propriedades duplicadas dos `.csproj` individuais\n\n## Critério de aceite\n- [ ] `dotnet build -c Release` sem warnings\n- [ ] Nenhum `.csproj` declara `Version` em `PackageReference`\n\n## Dependências\n{{INFRA-02}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 0"
+    },
+    {
+      "id": "INFRA-04",
+      "title": "INFRA-04 · docker-compose de desenvolvimento local",
+      "milestone": "Fase 1 — Fundação",
+      "labels": ["epico:fundacao", "prioridade:bloqueante", "tam:M"],
+      "body": "## Contexto\nO time precisa de Postgres, MongoDB e RabbitMQ rodando local antes de escrever qualquer integração. Prometheus e Grafana entram já para não virar corrida no fim.\n\n## Escopo\n- [ ] `docker/docker-compose.yml` com: `postgres:17`, `mongo:8`, `rabbitmq:4-management`, `prom/prometheus`, `grafana/grafana`\n- [ ] `healthcheck` em cada serviço\n- [ ] Volumes nomeados para persistir dados entre `up`/`down`\n- [ ] `.env.example` com as variáveis usadas\n- [ ] Portas documentadas (RabbitMQ UI em 15672, Grafana em 3000)\n\n## Critério de aceite\n- [ ] `docker compose up -d` sobe os 5 serviços com healthcheck verde\n- [ ] Management UI do RabbitMQ acessível no navegador\n\n## Dependências\n{{INFRA-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 0"
+    },
+
+    {
+      "id": "DOM-01",
+      "title": "DOM-01 · Value Object Cpf com validação de dígito verificador",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:dominio", "prioridade:obrigatorio", "tam:P"],
+      "body": "## Contexto\nO edital exige CPF com formato validado no cadastro de doador. Validar só a máscara não basta — dígito verificador é o que separa validação de teatro.\n\n## Escopo\n- [ ] `readonly record struct Cpf` (ou classe) em `GestorONG.Domain`\n- [ ] Normalizar para somente dígitos ao construir\n- [ ] Validar os **dois** dígitos verificadores\n- [ ] Rejeitar sequências repetidas (`00000000000`, `11111111111`, ...)\n- [ ] `TryParse` retornando falha sem exceção + factory que lança exceção de domínio\n- [ ] Formatação de exibição (`000.000.000-00`) separada do valor armazenado\n\n## Critério de aceite\n- [ ] CPF válido conhecido é aceito\n- [ ] CPF com dígito trocado é rejeitado\n- [ ] `111.111.111-11` é rejeitado\n\n## Dependências\n{{INFRA-02}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 1"
+    },
+    {
+      "id": "DOM-02",
+      "title": "DOM-02 · Value Object Email normalizado",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:dominio", "prioridade:obrigatorio", "tam:P"],
+      "body": "## Contexto\nO e-mail precisa ser único no banco. Sem normalizar, `Ana@x.com` e `ana@x.com` viram dois usuários.\n\n## Escopo\n- [ ] Value Object `Email` em `GestorONG.Domain`\n- [ ] Normalizar: `Trim()` + lowercase invariante\n- [ ] Validar formato\n- [ ] Igualdade estrutural pelo valor normalizado\n\n## Critério de aceite\n- [ ] `\" Ana@X.com \"` e `\"ana@x.com\"` são iguais\n- [ ] Formato inválido é rejeitado\n\n## Dependências\n{{INFRA-02}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 1"
+    },
+    {
+      "id": "DOM-03",
+      "title": "DOM-03 · Entidade Usuario com Role",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:dominio", "prioridade:obrigatorio", "tam:P"],
+      "body": "## Contexto\nO edital define dois perfis: `GestorONG` e `Doador`.\n\n## Escopo\n- [ ] Entidade `Usuario`: `Id`, `NomeCompleto`, `Email`, `Cpf`, `SenhaHash`, `Role`, `CriadoEm`\n- [ ] `enum Role { Doador, GestorONG }`\n- [ ] Construtor recebe **hash**, nunca senha em texto puro\n- [ ] Setters privados; mudanças de estado só por métodos\n\n## Critério de aceite\n- [ ] Não existe caminho no domínio que aceite senha em claro\n- [ ] `NomeCompleto` vazio é rejeitado\n\n## Dependências\n{{DOM-01}} · {{DOM-02}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 1"
+    },
+    {
+      "id": "DOM-04",
+      "title": "DOM-04 · Entidade Campanha",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:dominio", "prioridade:obrigatorio", "tam:M"],
+      "body": "## Contexto\nCampos obrigatórios definidos pelo edital.\n\n## Escopo\n- [ ] Entidade `Campanha`: `Id`, `Titulo`, `Descricao`, `DataInicio`, `DataFim`, `MetaFinanceira`, `Status`, `ValorArrecadado`\n- [ ] `enum StatusCampanha { Ativa, Concluida, Cancelada }`\n- [ ] Datas como `DateTimeOffset` (ver risco **R5** — fuso horário)\n- [ ] `MetaFinanceira` e `ValorArrecadado` como `decimal`\n- [ ] `ValorArrecadado` inicia em zero e **não** tem setter público\n\n## Critério de aceite\n- [ ] Nenhum código fora do domínio consegue atribuir `ValorArrecadado`\n\n## Dependências\n{{INFRA-02}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 1"
+    },
+    {
+      "id": "DOM-05",
+      "title": "DOM-05 · Regras de negócio da campanha (data e meta)",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:dominio", "prioridade:obrigatorio", "tam:M", "risco"],
+      "body": "## Contexto\nRegra explícita do edital: *\"uma campanha não pode ser criada com a data de término no passado e a meta financeira deve ser maior que zero\"*.\n\nMitiga o risco **R5**: comparar `DateTime.Now` local dentro de um container UTC gera bug fantasma que só aparece em produção.\n\n## Escopo\n- [ ] `DataFim` não pode ser no passado — comparar contra `TimeProvider` **injetado**, nunca `DateTime.Now`\n- [ ] `MetaFinanceira > 0`\n- [ ] `DataFim > DataInicio`\n- [ ] `Titulo` e `Descricao` obrigatórios, com limite de tamanho\n- [ ] Exceção de domínio tipada (`DomainValidationException`) com a lista de violações\n\n## Critério de aceite\n- [ ] Nenhuma referência a `DateTime.Now` ou `DateTime.UtcNow` no projeto `Domain`\n- [ ] Testes conseguem simular \"amanhã\" e \"ontem\" via `FakeTimeProvider`\n\n## Dependências\n{{DOM-04}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 1 · risco R5"
+    },
+    {
+      "id": "DOM-06",
+      "title": "DOM-06 · Entidade Doacao",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:dominio", "prioridade:obrigatorio", "tam:P"],
+      "body": "## Contexto\nA doação é registrada como **intenção** pela API e só depois processada pelo Worker. O status reflete isso.\n\n## Escopo\n- [ ] Entidade `Doacao`: `Id`, `IdCampanha`, `IdDoador`, `Valor`, `DataCriacao`, `Status`\n- [ ] `enum StatusDoacao { Pendente, Processada }`\n- [ ] Método `MarcarComoProcessada()` idempotente\n\n## Critério de aceite\n- [ ] Doação nasce sempre `Pendente`\n- [ ] Chamar `MarcarComoProcessada()` duas vezes não quebra\n\n## Dependências\n{{DOM-04}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 1"
+    },
+    {
+      "id": "DOM-07",
+      "title": "DOM-07 · Regra de negócio da doação (campanha encerrada ou cancelada)",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:dominio", "prioridade:obrigatorio", "tam:P"],
+      "body": "## Contexto\nRegra explícita do edital: *\"a doação não pode ser feita para campanhas encerradas ou canceladas\"*.\n\n## Escopo\n- [ ] Rejeitar doação para campanha com status `Concluida` ou `Cancelada`\n- [ ] Rejeitar doação para campanha com `DataFim` já vencida (mesmo que o status ainda esteja `Ativa`)\n- [ ] `Valor > 0`\n- [ ] Mensagem de erro distinguindo os casos\n\n## Critério de aceite\n- [ ] Teste cobre os 3 cenários de rejeição\n- [ ] Doação em campanha `Ativa` e vigente é aceita\n\n## Dependências\n{{DOM-06}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 1"
+    },
+    {
+      "id": "DOM-08",
+      "title": "DOM-08 · Campanha.RegistrarArrecadacao — ownership do valor pelo Worker",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:dominio", "prioridade:obrigatorio", "tam:P", "risco"],
+      "body": "## Contexto\nO edital determina que a API **não** atualiza o valor arrecadado. Este método é o único ponto de escrita do agregado, e será chamado exclusivamente pelo Worker.\n\nRelacionado ao risco **R4** (ambiguidade entre valor calculado x valor materializado).\n\n## Escopo\n- [ ] `RegistrarArrecadacao(decimal valor)` encapsulando o incremento\n- [ ] Decidir com o time: transição automática para `Concluida` quando a meta é atingida entra no MVP? Documentar a decisão.\n- [ ] Rejeitar valor não positivo\n\n## Critério de aceite\n- [ ] Nenhum código na `GestorONG.API` chama este método\n- [ ] Decisão sobre a transição automática registrada em ADR\n\n## Dependências\n{{DOM-04}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 1 · risco R4"
+    },
+    {
+      "id": "TEST-01",
+      "title": "TEST-01 · Testes de unidade do domínio (xUnit)",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:dominio", "prioridade:bonus", "tam:M"],
+      "body": "## Contexto\nBônus do edital: testes de unidade no domínio rodando **dentro da esteira de CI**. É barato porque o `Domain` não tem dependências.\n\n## Escopo\n- [ ] Cobrir `Cpf`: válido, dígito trocado, sequência repetida\n- [ ] Cobrir regras de campanha: data no passado, meta zero, `DataFim` anterior a `DataInicio`\n- [ ] Cobrir regras de doação: campanha cancelada, campanha concluída, campanha vencida, valor zero\n- [ ] Usar `FakeTimeProvider` (`Microsoft.Extensions.TimeProvider.Testing`)\n\n## Critério de aceite\n- [ ] `dotnet test tests/GestorONG.Domain.Tests` verde\n- [ ] Nenhum teste precisa de Docker, banco ou rede\n\n## Dependências\n{{DOM-05}} · {{DOM-07}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 1"
+    },
+
+    {
+      "id": "DATA-01",
+      "title": "DATA-01 · AppDbContext com EF Core e Npgsql",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:persistencia", "prioridade:obrigatorio", "tam:M"],
+      "body": "## Contexto\nPostgreSQL é o banco relacional escolhido — integridade forte para usuários, campanhas e o incremento atômico do valor arrecadado.\n\n## Escopo\n- [ ] `AppDbContext` em `GestorONG.Infrastructure`\n- [ ] Mapeamentos via `IEntityTypeConfiguration` para `Usuario`, `Campanha` e `Doacao`\n- [ ] Conversores dos Value Objects `Cpf` e `Email`\n- [ ] Dinheiro como `decimal(18,2)`\n- [ ] Datas como `timestamptz` (ver risco **R5**)\n- [ ] Connection string via `IConfiguration`, nunca hardcoded\n\n## Critério de aceite\n- [ ] `dotnet ef dbcontext info` executa sem erro\n- [ ] Nenhuma anotação de EF Core dentro do projeto `Domain`\n\n## Dependências\n{{DOM-03}} · {{DOM-04}} · {{DOM-06}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 2"
+    },
+    {
+      "id": "DATA-02",
+      "title": "DATA-02 · Índice único de Email e CPF, com tratamento de conflito",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:persistencia", "prioridade:obrigatorio", "tam:P", "risco"],
+      "body": "## Contexto\nO edital exige e-mail único. Mitiga o risco **R6**: validar só na aplicação deixa passar dois cadastros simultâneos que checam antes de qualquer um inserir.\n\n## Escopo\n- [ ] Índice único em `Usuario.Email`\n- [ ] Índice único em `Usuario.Cpf`\n- [ ] Capturar `DbUpdateException` de violação de unicidade e traduzir para **409 Conflict**\n- [ ] Não revelar qual dos dois campos conflitou (evita enumeração de usuários)\n\n## Critério de aceite\n- [ ] Cadastrar o mesmo e-mail duas vezes retorna 409, não 500\n- [ ] A restrição existe **no banco**, não só no código\n\n## Dependências\n{{DATA-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 2 · risco R6"
+    },
+    {
+      "id": "DATA-03",
+      "title": "DATA-03 · Migration inicial e aplicação automática no startup",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:persistencia", "prioridade:obrigatorio", "tam:P"],
+      "body": "## Contexto\nO professor precisa subir tudo com poucos comandos. Migrar no startup é aceitável para um MVP de hackathon — mas é uma limitação consciente, não um descuido.\n\n## Escopo\n- [ ] `dotnet ef migrations add InitialCreate`\n- [ ] `Database.MigrateAsync()` no startup da API, com retry (o Postgres pode não estar pronto no K8s)\n- [ ] Documentar em ADR por que não é um Job de migração separado\n\n## Critério de aceite\n- [ ] Subir a API contra um banco vazio cria todo o schema\n- [ ] A API não morre se o Postgres demorar a ficar pronto\n\n## Dependências\n{{DATA-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 2"
+    },
+    {
+      "id": "DATA-04",
+      "title": "DATA-04 · Seed do usuário GestorONG",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:persistencia", "prioridade:obrigatorio", "tam:P", "caminho-critico"],
+      "body": "## Contexto\nO cadastro público só cria `Doador`. Sem um `GestorONG` semeado, **não existe caminho para criar a primeira campanha** — a demo trava.\n\n## Escopo\n- [ ] Seed idempotente de um usuário com role `GestorONG` no startup\n- [ ] Credenciais lidas de configuração (Secret no K8s), com valor padrão só em `Development`\n- [ ] Senha semeada já com hash BCrypt\n- [ ] Registrar as credenciais de demo no README\n\n## Critério de aceite\n- [ ] Subir a API duas vezes não duplica o usuário\n- [ ] Login com o gestor semeado retorna token com role `GestorONG`\n\n## Dependências\n{{DATA-03}} · {{AUTH-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 2"
+    },
+    {
+      "id": "DATA-05",
+      "title": "DATA-05 · Contexto MongoDB e coleção doacoes_processadas com índice único",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:persistencia", "prioridade:obrigatorio", "tam:M", "risco"],
+      "body": "## Contexto\nMongoDB é o segundo banco: ledger append-only de doações processadas, para auditoria e reconciliação.\n\nO **índice único em `IdDoacao` é a base da idempotência** do Worker (risco **R2**) — sem ele, redelivery do RabbitMQ infla o valor arrecadado.\n\n## Escopo\n- [ ] `MongoContext` em `GestorONG.Infrastructure` com `IMongoClient` singleton\n- [ ] Coleção `doacoes_processadas`: `IdDoacao`, `IdCampanha`, `IdDoador`, `Valor`, `ProcessadoEm`\n- [ ] **Índice único em `IdDoacao`**, criado no startup do Worker\n- [ ] Connection string via configuração\n\n## Critério de aceite\n- [ ] Inserir o mesmo `IdDoacao` duas vezes lança `MongoWriteException` com código de chave duplicada\n- [ ] O índice existe após o primeiro startup\n\n## Dependências\n{{INFRA-04}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 2 · risco R2"
+    },
+    {
+      "id": "DATA-06",
+      "title": "DATA-06 · Repositórios de Usuario, Campanha, Doacao e Ledger",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:persistencia", "prioridade:obrigatorio", "tam:M"],
+      "body": "## Contexto\nInterfaces em `Application`, implementações em `Infrastructure`. É o que permite o Dev B trabalhar em paralelo assim que as interfaces existirem.\n\n## Escopo\n- [ ] `IUsuarioRepository`: buscar por e-mail, adicionar\n- [ ] `ICampanhaRepository`: CRUD, listar ativas, listar com paginação\n- [ ] `IDoacaoRepository`: adicionar, marcar como processada\n- [ ] `IDoacaoLedgerRepository` (Mongo): registrar processamento\n- [ ] Registro no contêiner de DI\n\n## Critério de aceite\n- [ ] As interfaces estão em `Application`, sem nenhuma referência a EF Core ou driver do Mongo\n- [ ] Publicar as interfaces **antes** de implementá-las, para desbloquear o time\n\n## Dependências\n{{DATA-01}} · {{DATA-05}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 2"
+    },
+    {
+      "id": "DATA-07",
+      "title": "DATA-07 · Incremento atômico do ValorArrecadado",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:persistencia", "prioridade:obrigatorio", "tam:P", "risco", "caminho-critico"],
+      "body": "## Contexto\nMitiga o risco **R3**: com 2 réplicas do Worker, ler o valor, somar em memória e gravar causa *lost update* — duas doações viram uma.\n\n## Escopo\n- [ ] `ICampanhaRepository.IncrementarArrecadadoAsync(Guid id, decimal valor)`\n- [ ] Implementar com `UPDATE campanhas SET valor_arrecadado = valor_arrecadado + @valor WHERE id = @id` (via `ExecuteUpdateAsync` ou SQL direto)\n- [ ] **Nunca** read-modify-write\n- [ ] Retornar o número de linhas afetadas para detectar campanha inexistente\n\n## Critério de aceite\n- [ ] Disparar N incrementos concorrentes resulta em soma exata de N\n- [ ] Nenhuma leitura da entidade antes do update\n\n## Dependências\n{{DATA-06}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 2 · risco R3"
+    },
+
+    {
+      "id": "AUTH-01",
+      "title": "AUTH-01 · IPasswordHasher com BCrypt",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:auth", "prioridade:obrigatorio", "tam:P"],
+      "body": "## Contexto\nO edital pede senha armazenada com hash, citando BCrypt como exemplo.\n\n## Escopo\n- [ ] Interface `IPasswordHasher` em `Application`\n- [ ] Implementação com `BCrypt.Net-Next`, work factor 12\n- [ ] `Hash(string)` e `Verify(string, string)`\n\n## Critério de aceite\n- [ ] Dois hashes da mesma senha são diferentes (salt por hash)\n- [ ] `Verify` valida corretamente ambos\n\n## Dependências\n{{INFRA-02}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 3"
+    },
+    {
+      "id": "AUTH-02",
+      "title": "AUTH-02 · IJwtTokenService — emissão do token",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:auth", "prioridade:obrigatorio", "tam:M"],
+      "body": "## Contexto\nO edital exige autenticação baseada em JWT.\n\n## Escopo\n- [ ] `IJwtTokenService.Gerar(Usuario)` retornando token + expiração\n- [ ] Claims: `sub`, `email`, `role`, `exp`, `iss`, `aud`\n- [ ] Chave simétrica lida de `IConfiguration` — **Secret do Kubernetes** em produção\n- [ ] **Nunca** commitar a chave no `appsettings.json`\n\n## Critério de aceite\n- [ ] Token decodificado em jwt.io mostra a role correta\n- [ ] `git grep` não encontra nenhuma chave JWT versionada\n\n## Dependências\n{{AUTH-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 3"
+    },
+    {
+      "id": "AUTH-03",
+      "title": "AUTH-03 · Configurar JwtBearer e policies de autorização",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:auth", "prioridade:obrigatorio", "tam:M", "risco", "caminho-critico"],
+      "body": "## Contexto\nMitiga o risco **R7**: o `JwtBearer` mapeia claims por padrão e a divergência entre `role` e `ClaimTypes.Role` derruba a autorização silenciosamente — todo endpoint de gestão devolve 403 sem explicação. É o bug que mais consome tempo em hackathon.\n\n## Escopo\n- [ ] `AddAuthentication().AddJwtBearer()` com `TokenValidationParameters` completo\n- [ ] **Fixar `RoleClaimType` explicitamente** e desligar o mapeamento automático de claims\n- [ ] Policies `GestorOnly` e `DoadorOnly`\n- [ ] `app.UseAuthentication()` **antes** de `app.UseAuthorization()` (o `Program.cs` atual não tem `UseAuthentication`)\n\n## Critério de aceite\n- [ ] Endpoint protegido: 401 sem token, 403 com token de `Doador`, 200 com token de `GestorONG`\n- [ ] Comportamento coberto por teste ou por requisição documentada na coleção Postman\n\n## Dependências\n{{AUTH-02}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 3 · risco R7"
+    },
+    {
+      "id": "AUTH-04",
+      "title": "AUTH-04 · POST /api/v1/auth/registrar (público)",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:auth", "prioridade:obrigatorio", "tam:M"],
+      "body": "## Contexto\nRequisito funcional 3 do edital: cadastro público de doadores.\n\n## Escopo\n- [ ] `POST /api/v1/auth/registrar` com `[AllowAnonymous]`\n- [ ] Campos: `NomeCompleto`, `Email` (único), `Cpf` (validado), `Senha` (hash BCrypt)\n- [ ] **Role sempre `Doador`** — jamais aceitar `role` vinda do payload (escalação de privilégio)\n- [ ] Retornar 201 + `Location`, sem devolver o hash\n- [ ] 409 em e-mail ou CPF duplicado\n\n## Critério de aceite\n- [ ] Enviar `\"role\": \"GestorONG\"` no payload cria um `Doador`\n- [ ] Resposta nunca contém `SenhaHash`\n\n## Dependências\n{{AUTH-03}} · {{DATA-02}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 3"
+    },
+    {
+      "id": "AUTH-05",
+      "title": "AUTH-05 · POST /api/v1/auth/login",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:auth", "prioridade:obrigatorio", "tam:P", "caminho-critico"],
+      "body": "## Contexto\nÉ o primeiro passo da demo em vídeo: obter o token JWT via Swagger/Postman.\n\n## Escopo\n- [ ] `POST /api/v1/auth/login` com `[AllowAnonymous]`\n- [ ] Verificar senha com `IPasswordHasher.Verify`\n- [ ] Retornar `accessToken`, `expiresIn` e `role`\n- [ ] Mensagem de erro **genérica** — não revelar se o e-mail existe\n\n## Critério de aceite\n- [ ] Credencial errada e e-mail inexistente produzem a mesma resposta 401\n- [ ] Token retornado funciona nos endpoints protegidos\n\n## Dependências\n{{AUTH-04}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 3"
+    },
+    {
+      "id": "AUTH-06",
+      "title": "AUTH-06 · Middleware global de exceções com ProblemDetails",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:auth", "prioridade:obrigatorio", "tam:M"],
+      "body": "## Contexto\nSem isso, toda violação de regra de domínio vira 500 com stack trace — péssimo na demo e vazamento de informação.\n\n## Escopo\n- [ ] `IExceptionHandler` global traduzindo para ProblemDetails (RFC 7807)\n- [ ] `DomainValidationException` → 400 com a lista de violações\n- [ ] `NotFoundException` → 404 · conflito de unicidade → 409\n- [ ] Exceção não tratada → 500 genérico, **sem stack trace**, com `traceId` para correlação\n\n## Critério de aceite\n- [ ] Criar campanha com meta zero retorna 400 estruturado, não 500\n- [ ] Nenhuma resposta de erro contém stack trace fora de `Development`\n\n## Dependências\nNenhuma.\n\n---\n`docs/BACKLOG.md` § ÉPICO 3"
+    },
+    {
+      "id": "AUTH-07",
+      "title": "AUTH-07 · Redigir CPF e senha dos logs (LGPD)",
+      "milestone": "Fase 2 — Núcleo",
+      "labels": ["epico:auth", "prioridade:obrigatorio", "tam:P", "risco"],
+      "body": "## Contexto\nMitiga o risco **R9**: CPF é dado pessoal e vai parar em log estruturado sem ninguém perceber, especialmente ao logar o request body inteiro.\n\n## Escopo\n- [ ] Nunca logar request body dos endpoints de auth\n- [ ] Mascarar CPF nos logs (`***.***.***-00`)\n- [ ] Garantir que `SenhaHash` e `Senha` nunca sejam serializados em log\n- [ ] Revisar o `ToString()` das entidades e DTOs\n\n## Critério de aceite\n- [ ] Grep nos logs de um fluxo completo de cadastro não encontra CPF nem senha\n\n## Dependências\n{{AUTH-04}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 3 · risco R9"
+    },
+
+    {
+      "id": "CAMP-01",
+      "title": "CAMP-01 · POST /api/v1/campanhas (GestorONG)",
+      "milestone": "Fase 3 — Fluxo de valor",
+      "labels": ["epico:campanhas", "prioridade:obrigatorio", "tam:M", "caminho-critico"],
+      "body": "## Contexto\nRequisito funcional 2 do edital. Aparece no vídeo logo depois do login.\n\n## Escopo\n- [ ] `POST /api/v1/campanhas` protegido pela policy `GestorOnly`\n- [ ] Payload: `Titulo`, `Descricao`, `DataInicio`, `DataFim`, `MetaFinanceira`, `Status`\n- [ ] Aplicar as regras de {{DOM-05}}\n- [ ] Retornar 201 + `Location`\n\n## Critério de aceite\n- [ ] Token de `Doador` recebe 403\n- [ ] `DataFim` no passado retorna 400 com mensagem clara\n- [ ] `MetaFinanceira` zero ou negativa retorna 400\n\n## Dependências\n{{AUTH-03}} · {{DATA-06}} · {{DOM-05}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 4"
+    },
+    {
+      "id": "CAMP-02",
+      "title": "CAMP-02 · PUT /api/v1/campanhas/{id} (GestorONG)",
+      "milestone": "Fase 3 — Fluxo de valor",
+      "labels": ["epico:campanhas", "prioridade:obrigatorio", "tam:M"],
+      "body": "## Contexto\nO edital pede \"Criar/Editar\".\n\n## Escopo\n- [ ] `PUT /api/v1/campanhas/{id}` protegido por `GestorOnly`\n- [ ] Revalidar as regras de domínio na edição\n- [ ] **Decidir com o time** o que fica imutável depois que a campanha já recebeu doações (sugestão: `MetaFinanceira` e `DataInicio`) e documentar\n- [ ] `ValorArrecadado` nunca é editável pela API\n- [ ] 404 se não existir\n\n## Critério de aceite\n- [ ] Não existe caminho pela API que altere `ValorArrecadado`\n- [ ] Decisão sobre campos imutáveis registrada\n\n## Dependências\n{{CAMP-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 4"
+    },
+    {
+      "id": "CAMP-03",
+      "title": "CAMP-03 · PATCH /api/v1/campanhas/{id}/status",
+      "milestone": "Fase 3 — Fluxo de valor",
+      "labels": ["epico:campanhas", "prioridade:obrigatorio", "tam:P"],
+      "body": "## Contexto\nNecessário para demonstrar a regra de doação bloqueada em campanha cancelada.\n\n## Escopo\n- [ ] `PATCH /api/v1/campanhas/{id}/status` protegido por `GestorOnly`\n- [ ] Transições válidas: `Ativa → Concluida` e `Ativa → Cancelada`\n- [ ] Bloquear o resto (reabrir campanha cancelada, etc.) com 409\n\n## Critério de aceite\n- [ ] Tentar `Cancelada → Ativa` retorna 409\n- [ ] Campanha cancelada some do painel público\n\n## Dependências\n{{CAMP-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 4"
+    },
+    {
+      "id": "CAMP-04",
+      "title": "CAMP-04 · GET de campanhas para o gestor, com paginação",
+      "milestone": "Fase 3 — Fluxo de valor",
+      "labels": ["epico:campanhas", "prioridade:obrigatorio", "tam:M"],
+      "body": "## Contexto\nDiferente do painel público: o gestor vê campanhas de **todos** os status.\n\n## Escopo\n- [ ] `GET /api/v1/campanhas` com paginação (`page`, `pageSize`) e filtro opcional por status\n- [ ] `GET /api/v1/campanhas/{id}`\n- [ ] Ambos protegidos por `GestorOnly`\n- [ ] Limite máximo de `pageSize`\n\n## Critério de aceite\n- [ ] Resposta traz `totalItems` e `totalPages`\n- [ ] `pageSize` absurdo é limitado, não aceito\n\n## Dependências\n{{CAMP-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 4"
+    },
+    {
+      "id": "CAMP-05",
+      "title": "CAMP-05 · Validação de request com resposta 400 estruturada",
+      "milestone": "Fase 3 — Fluxo de valor",
+      "labels": ["epico:campanhas", "prioridade:obrigatorio", "tam:M"],
+      "body": "## Contexto\nValidação de formato acontece na borda; regra de negócio fica no domínio. Não misturar os dois.\n\n## Escopo\n- [ ] FluentValidation (ou DataAnnotations) nos DTOs de request\n- [ ] Campos obrigatórios, tamanhos, formato de data e valores numéricos\n- [ ] Resposta 400 em ProblemDetails listando campo → erro\n- [ ] Aplicar também nos DTOs de auth e doação\n\n## Critério de aceite\n- [ ] Payload vazio retorna 400 apontando todos os campos faltantes de uma vez\n- [ ] Regra de negócio continua no `Domain`, não duplicada no validador\n\n## Dependências\n{{CAMP-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 4"
+    },
+
+    {
+      "id": "PUB-01",
+      "title": "PUB-01 · GET /api/v1/publico/campanhas — apenas campanhas Ativas",
+      "milestone": "Fase 3 — Fluxo de valor",
+      "labels": ["epico:painel-publico", "prioridade:obrigatorio", "tam:M", "caminho-critico"],
+      "body": "## Contexto\nRequisito funcional 4 do edital. **É o endpoint que a banca vai chamar no vídeo para provar que o Worker atualizou o valor.**\n\n## Escopo\n- [ ] `GET /api/v1/publico/campanhas` com `[AllowAnonymous]`\n- [ ] Retornar **apenas** campanhas com status `Ativa`\n- [ ] Campos: `Titulo`, `MetaFinanceira`, `ValorArrecadado`\n- [ ] Ler o valor materializado — sem recalcular somando doações no request\n\n## Critério de aceite\n- [ ] Chamada sem token retorna 200\n- [ ] Campanha `Concluida` ou `Cancelada` não aparece na lista\n\n## Dependências\n{{CAMP-01}} · {{DATA-07}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 5"
+    },
+    {
+      "id": "PUB-02",
+      "title": "PUB-02 · Garantir que o DTO público não vaza dados internos",
+      "milestone": "Fase 3 — Fluxo de valor",
+      "labels": ["epico:painel-publico", "prioridade:obrigatorio", "tam:P"],
+      "body": "## Contexto\nRetornar a entidade direto é o vazamento clássico: expõe dados de doador, id de gestor e campos internos num endpoint anônimo.\n\n## Escopo\n- [ ] DTO dedicado `CampanhaPublicaResponse` — **nunca** a entidade\n- [ ] Não expor `IdGestor`, dados de doadores nem contagem de doações individuais\n- [ ] Revisar a serialização para não incluir campos por acidente\n\n## Critério de aceite\n- [ ] O JSON de resposta contém exatamente os campos previstos, nada além\n\n## Dependências\n{{PUB-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 5"
+    },
+    {
+      "id": "PUB-03",
+      "title": "PUB-03 · PercentualAtingido e cache curto no painel público",
+      "milestone": "Fase 3 — Fluxo de valor",
+      "labels": ["epico:painel-publico", "prioridade:obrigatorio", "tam:P"],
+      "body": "## Contexto\nPequeno polimento que rende no vídeo: mostra a barra de progresso enchendo depois da doação ser processada.\n\n## Escopo\n- [ ] Campo calculado `PercentualAtingido` = `ValorArrecadado / MetaFinanceira`\n- [ ] `Cache-Control` curto (5–15s) — não mais que isso, senão a demo parece quebrada\n- [ ] Cuidado com divisão por zero (a meta é sempre > 0 por regra, mas defender mesmo assim)\n\n## Critério de aceite\n- [ ] Após uma doação processada, uma nova chamada reflete o novo percentual dentro do TTL do cache\n\n## Dependências\n{{PUB-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 5"
+    },
+
+    {
+      "id": "MSG-01",
+      "title": "MSG-01 · Contrato DoacaoRecebidaEvent",
+      "milestone": "Fase 3 — Fluxo de valor",
+      "labels": ["epico:mensageria", "prioridade:obrigatorio", "tam:P", "caminho-critico"],
+      "body": "## Contexto\nContrato compartilhado entre API (producer) e Worker (consumer). O edital cita `DoacaoRecebidaEvent` nominalmente.\n\n## Escopo\n- [ ] Projeto `GestorONG.Contracts` sem dependências de infraestrutura\n- [ ] `record DoacaoRecebidaEvent(Guid IdDoacao, Guid IdCampanha, Guid IdDoador, decimal Valor, DateTimeOffset OcorridoEm)`\n- [ ] Imutável\n- [ ] Estratégia de versionamento documentada (namespace versionado)\n\n## Critério de aceite\n- [ ] API e Worker referenciam o mesmo assembly de contrato\n- [ ] `Contracts` não referencia `Domain` nem `Infrastructure`\n\n## Dependências\n{{INFRA-02}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 6"
+    },
+    {
+      "id": "MSG-02",
+      "title": "MSG-02 · MassTransit + RabbitMQ na API (producer)",
+      "milestone": "Fase 3 — Fluxo de valor",
+      "labels": ["epico:mensageria", "prioridade:obrigatorio", "tam:M", "caminho-critico"],
+      "body": "## Contexto\nRequisito técnico obrigatório: publicar em broker de mensageria.\n\n## Escopo\n- [ ] `MassTransit` + `MassTransit.RabbitMQ` na API\n- [ ] Host, usuário e senha do RabbitMQ via variável de ambiente (ConfigMap + Secret)\n- [ ] Configurar nome de exchange/fila previsível — precisa ser **reconhecível na Management UI durante o vídeo**\n- [ ] Health check do bus\n\n## Critério de aceite\n- [ ] A API sobe sem RabbitMQ disponível e reconecta quando ele volta\n- [ ] A exchange aparece na Management UI com nome legível\n\n## Dependências\n{{MSG-01}} · {{INFRA-04}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 6"
+    },
+    {
+      "id": "MSG-03",
+      "title": "MSG-03 · POST /api/v1/doacoes — intenção de doação (Doador logado)",
+      "milestone": "Fase 3 — Fluxo de valor",
+      "labels": ["epico:mensageria", "prioridade:obrigatorio", "tam:G", "caminho-critico"],
+      "body": "## Contexto\nRequisito funcional 5. **A API não pode atualizar o valor arrecadado aqui** — essa é a restrição central do edital.\n\n## Escopo\n- [ ] `POST /api/v1/doacoes` protegido por `DoadorOnly`\n- [ ] Payload: `IdCampanha`, `ValorDoacao`\n- [ ] `IdDoador` vem do claim `sub` do token, **nunca** do payload\n- [ ] Validar as regras de {{DOM-07}} (campanha encerrada/cancelada)\n- [ ] Persistir `Doacao` com status `Pendente`\n- [ ] Publicar `DoacaoRecebidaEvent`\n- [ ] Retornar **202 Accepted** — o processamento é assíncrono, não 201\n\n## Critério de aceite\n- [ ] Nenhum `UPDATE` em `campanhas` é emitido por este endpoint\n- [ ] Doação em campanha cancelada retorna 400 e **não** publica evento\n- [ ] Enviar `IdDoador` de outra pessoa no payload é ignorado\n\n## Dependências\n{{MSG-02}} · {{DOM-07}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 6"
+    },
+    {
+      "id": "MSG-04",
+      "title": "MSG-04 · Transactional Outbox (MassTransit + EF Core)",
+      "milestone": "Fase 3 — Fluxo de valor",
+      "labels": ["epico:mensageria", "prioridade:obrigatorio", "tam:G", "risco", "caminho-critico"],
+      "body": "## Contexto\nMitiga o risco **R1** (dupla escrita): hoje o fluxo grava a doação no Postgres e publica no RabbitMQ. Se o publish falhar **depois** do commit, a doação existe e nunca é processada — o valor arrecadado nunca sobe e ninguém percebe.\n\n## Escopo\n- [ ] Habilitar `AddEntityFrameworkOutbox<AppDbContext>` no MassTransit\n- [ ] Migration das tabelas de outbox/inbox\n- [ ] Garantir que gravar a doação e enfileirar a mensagem aconteça na **mesma transação**\n- [ ] Configurar o `DeliveryService` para entregar as mensagens pendentes\n\n## Critério de aceite\n- [ ] Derrubar o RabbitMQ, fazer uma doação (retorna 202), subir o RabbitMQ → o evento é entregue e o valor atualiza\n- [ ] Nenhuma doação fica órfã de evento\n\n## Dependências\n{{MSG-03}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 6 · risco R1"
+    },
+    {
+      "id": "MSG-05",
+      "title": "MSG-05 · Projeto GestorONG.Worker com MassTransit consumer",
+      "milestone": "Fase 3 — Fluxo de valor",
+      "labels": ["epico:mensageria", "prioridade:obrigatorio", "tam:M", "caminho-critico"],
+      "body": "## Contexto\nO segundo microsserviço exigido pelo edital.\n\n## Escopo\n- [ ] `GestorONG.Worker` como `Microsoft.NET.Sdk.Worker`\n- [ ] MassTransit configurado como consumer, apontando para a mesma exchange\n- [ ] Acesso a Postgres (para o incremento) e MongoDB (para o ledger)\n- [ ] Graceful shutdown — terminar a mensagem em andamento antes de morrer\n- [ ] Configuração via variáveis de ambiente\n\n## Critério de aceite\n- [ ] O Worker sobe e aparece como consumer na Management UI do RabbitMQ\n- [ ] `SIGTERM` não deixa mensagem pela metade\n\n## Dependências\n{{MSG-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 6"
+    },
+    {
+      "id": "MSG-06",
+      "title": "MSG-06 · DoacaoRecebidaConsumer idempotente",
+      "milestone": "Fase 3 — Fluxo de valor",
+      "labels": ["epico:mensageria", "prioridade:bloqueante", "tam:GG", "risco", "caminho-critico"],
+      "body": "## Contexto\n**O coração da avaliação.** Mitiga os riscos **R2** (redelivery infla o valor) e **R3** (lost update entre réplicas).\n\nRabbitMQ é *at-least-once*: se o Worker processa, incrementa e o ACK se perde, a mensagem volta. Sem dedupe, o valor arrecadado sobe duas vezes — e é exatamente o cenário que a banca testa.\n\n## Escopo\nOrdem obrigatória de execução:\n1. - [ ] Tentar inserir no ledger do Mongo. Se violar o índice único de `IdDoacao`, é redelivery → **ACK e sai**, sem incrementar\n2. - [ ] Chamar o `UPDATE` atômico no Postgres ({{DATA-07}})\n3. - [ ] Marcar a `Doacao` como `Processada`\n\n- [ ] Tratar campanha inexistente sem entrar em loop infinito de retry\n\n## Critério de aceite\n- [ ] Processar a **mesma** mensagem duas vezes incrementa o valor **uma** vez\n- [ ] Rodar com `replicas: 2` e disparar N doações resulta em soma exata\n\n## Dependências\n{{MSG-05}} · {{DATA-05}} · {{DATA-07}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 6 · riscos R2 e R3"
+    },
+    {
+      "id": "MSG-07",
+      "title": "MSG-07 · Retry exponencial e Dead Letter Queue",
+      "milestone": "Fase 3 — Fluxo de valor",
+      "labels": ["epico:mensageria", "prioridade:obrigatorio", "tam:M"],
+      "body": "## Contexto\nUma mensagem envenenada sem DLQ trava a fila inteira. Se acontecer durante a demo, não tem recuperação.\n\n## Escopo\n- [ ] `UseMessageRetry` com backoff exponencial (ex.: 3 tentativas)\n- [ ] Configurar Dead Letter Queue / `_error` queue do MassTransit\n- [ ] Distinguir falha **transitória** (banco fora → retry) de falha **permanente** (campanha inexistente → DLQ direto)\n- [ ] Log em nível `Error` ao mandar para a DLQ\n\n## Critério de aceite\n- [ ] Mensagem com `IdCampanha` inexistente vai para a DLQ e não bloqueia as seguintes\n- [ ] A fila continua drenando depois de uma falha\n\n## Dependências\n{{MSG-06}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 6"
+    },
+    {
+      "id": "MSG-08",
+      "title": "MSG-08 · Log estruturado do processamento no Worker",
+      "milestone": "Fase 3 — Fluxo de valor",
+      "labels": ["epico:mensageria", "prioridade:entregavel", "tam:P"],
+      "body": "## Contexto\nÉ o terminal que aparece no vídeo provando que o Worker processou. Log genérico não convence ninguém.\n\n## Escopo\n- [ ] Log estruturado com `IdDoacao`, `IdCampanha`, valor da doação e valor arrecadado **antes e depois**\n- [ ] Log distinto e explícito para o caso de redelivery descartada por idempotência\n- [ ] Incluir `TraceId` correlacionando com a requisição original da API\n\n## Critério de aceite\n- [ ] Assistir ao log do Worker durante uma doação conta a história inteira sem precisar de explicação\n\n## Dependências\n{{MSG-06}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 6"
+    },
+    {
+      "id": "TEST-02",
+      "title": "TEST-02 · Teste de idempotência do consumer (InMemoryTestHarness)",
+      "milestone": "Fase 3 — Fluxo de valor",
+      "labels": ["epico:mensageria", "prioridade:bonus", "tam:M", "risco"],
+      "body": "## Contexto\nProva automatizada de que o risco **R2** está mitigado. É o teste que mais vale a pena mostrar na defesa.\n\n## Escopo\n- [ ] `MassTransit.TestFramework` com `InMemoryTestHarness`\n- [ ] Cenário: consumir a mesma `DoacaoRecebidaEvent` duas vezes\n- [ ] Assertar que `IncrementarArrecadadoAsync` foi chamado **exatamente uma vez**\n- [ ] Rodar na esteira de CI\n\n## Critério de aceite\n- [ ] O teste falha se a checagem de idempotência for removida do consumer\n\n## Dependências\n{{MSG-06}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 6 · risco R2"
+    },
+
+    {
+      "id": "K8S-01",
+      "title": "K8S-01 · Dockerfile multi-stage da API",
+      "milestone": "Fase 4 — Infra de entrega",
+      "labels": ["epico:kubernetes", "prioridade:obrigatorio", "tam:M"],
+      "body": "## Contexto\nO CI precisa gerar esta imagem — requisito obrigatório do edital.\n\n## Escopo\n- [ ] Multi-stage: `sdk:10.0` para build, `aspnet:10.0-alpine` para runtime\n- [ ] Usuário **não-root** na imagem final\n- [ ] `.dockerignore` excluindo `bin/`, `obj/`, `.vs/`, `.git/`\n- [ ] Ordenar as camadas para aproveitar cache do `restore`\n- [ ] `EXPOSE 8080` e `ASPNETCORE_HTTP_PORTS=8080`\n\n## Critério de aceite\n- [ ] `docker build` funciona a partir da raiz do repo\n- [ ] Container sobe e responde no `/health/live`\n- [ ] `docker run` não roda como root\n\n## Dependências\n{{INFRA-02}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 7"
+    },
+    {
+      "id": "K8S-02",
+      "title": "K8S-02 · Dockerfile multi-stage do Worker",
+      "milestone": "Fase 4 — Infra de entrega",
+      "labels": ["epico:kubernetes", "prioridade:obrigatorio", "tam:P"],
+      "body": "## Contexto\nMesmo padrão da API, mas com imagem base de runtime (não ASP.NET) se o Worker não expuser HTTP — decidir junto com {{K8S-06}}.\n\n## Escopo\n- [ ] Multi-stage seguindo o mesmo padrão de {{K8S-01}}\n- [ ] Usuário não-root\n- [ ] Decidir se expõe porta HTTP para health/metrics\n\n## Critério de aceite\n- [ ] `docker build` do Worker funciona\n- [ ] Container conecta no RabbitMQ do compose e consome\n\n## Dependências\n{{K8S-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 7"
+    },
+    {
+      "id": "K8S-03",
+      "title": "K8S-03 · Condicionar UseHttpsRedirection para não quebrar as probes",
+      "milestone": "Fase 4 — Infra de entrega",
+      "labels": ["epico:kubernetes", "prioridade:obrigatorio", "tam:P", "risco"],
+      "body": "## Contexto\nMitiga o risco **R8**. O `Program.cs` atual chama `app.UseHttpsRedirection()` incondicionalmente. Dentro do pod não há certificado: a liveness probe toma **307** e o Kubernetes mata o pod em loop. Sintoma clássico de `CrashLoopBackOff` sem erro nenhum no log da aplicação.\n\n## Escopo\n- [ ] Aplicar o redirect apenas fora de container (ou remover)\n- [ ] Terminar TLS no Ingress\n- [ ] Garantir que `/health/live` responde 200 em HTTP puro\n\n## Critério de aceite\n- [ ] `kubectl get pods` mostra a API `Running` e `1/1 Ready` de forma estável\n- [ ] `curl` HTTP direto no pod retorna 200, não 307\n\n## Dependências\n{{K8S-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 7 · risco R8"
+    },
+    {
+      "id": "K8S-04",
+      "title": "K8S-04 · Namespace, ConfigMap e Secret",
+      "milestone": "Fase 4 — Infra de entrega",
+      "labels": ["epico:kubernetes", "prioridade:obrigatorio", "tam:M"],
+      "body": "## Contexto\nO edital exige entrega dos `.yaml` incluindo ConfigMaps.\n\n## Escopo\n- [ ] `Namespace` dedicado (`conexao-solidaria`)\n- [ ] `ConfigMap`: host do RabbitMQ, nomes de banco, nível de log, issuer/audience do JWT\n- [ ] `Secret`: chave JWT, senhas de Postgres e Mongo, credenciais do RabbitMQ, senha do gestor semeado\n- [ ] `secret.example.yaml` versionado com valores fake; o real fica fora do Git\n- [ ] Documentar como gerar o Secret no README\n\n## Critério de aceite\n- [ ] Nenhum segredo real versionado (`git grep` por senhas conhecidas não retorna nada)\n- [ ] Pods leem a configuração via `envFrom`\n\n## Dependências\n{{K8S-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 7"
+    },
+    {
+      "id": "K8S-05",
+      "title": "K8S-05 · Deployment e Service da API com probes e resources",
+      "milestone": "Fase 4 — Infra de entrega",
+      "labels": ["epico:kubernetes", "prioridade:obrigatorio", "tam:G", "caminho-critico"],
+      "body": "## Contexto\nEntregável obrigatório. `kubectl get pods` aparece no vídeo.\n\n## Escopo\n- [ ] `Deployment` da API com `replicas: 2`\n- [ ] `readinessProbe` → `/health/ready` · `livenessProbe` → `/health/live`\n- [ ] `resources.requests` e `resources.limits` de CPU e memória (necessários para o dashboard do Grafana ter o que mostrar)\n- [ ] `Service` do tipo `ClusterIP`\n- [ ] `envFrom` apontando para o ConfigMap e o Secret\n- [ ] `imagePullPolicy` coerente com o registry usado\n\n## Critério de aceite\n- [ ] `kubectl get pods -n conexao-solidaria` mostra 2/2 pods `Running` e `Ready`\n- [ ] Matar um pod não derruba o serviço\n\n## Dependências\n{{K8S-04}} · {{OBS-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 7"
+    },
+    {
+      "id": "K8S-06",
+      "title": "K8S-06 · Deployment do Worker com 2 réplicas",
+      "milestone": "Fase 4 — Infra de entrega",
+      "labels": ["epico:kubernetes", "prioridade:obrigatorio", "tam:M", "caminho-critico"],
+      "body": "## Contexto\nRodar com 2 réplicas não é enfeite: é a **prova prática** de que a idempotência de {{MSG-06}} e o incremento atômico de {{DATA-07}} funcionam. Vale mencionar isso no vídeo.\n\n## Escopo\n- [ ] `Deployment` do Worker com `replicas: 2`, **sem** Service (não expõe HTTP público)\n- [ ] Probe via endpoint de health próprio ou `exec`\n- [ ] `resources.requests` e `limits`\n- [ ] `terminationGracePeriodSeconds` suficiente para o graceful shutdown\n\n## Critério de aceite\n- [ ] As 2 réplicas aparecem como consumers na Management UI do RabbitMQ\n- [ ] Disparar 20 doações concorrentes resulta em soma exata\n\n## Dependências\n{{K8S-05}} · {{MSG-06}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 7"
+    },
+    {
+      "id": "K8S-07",
+      "title": "K8S-07 · Manifests de PostgreSQL, MongoDB e RabbitMQ",
+      "milestone": "Fase 4 — Infra de entrega",
+      "labels": ["epico:kubernetes", "prioridade:obrigatorio", "tam:G"],
+      "body": "## Contexto\nAs dependências precisam rodar no cluster para o `kubectl get pods` da demo fazer sentido.\n\n## Escopo\n- [ ] PostgreSQL: `StatefulSet` (ou `Deployment` + PVC) + `Service` + `PersistentVolumeClaim`\n- [ ] MongoDB: idem\n- [ ] RabbitMQ com plugin de management habilitado\n- [ ] Alternativa aceitável: Helm charts do Bitnami — se optar por isso, **documentar os comandos exatos no README**\n- [ ] Ajustar `resources` para caber em Minikube/Kind numa máquina de dev\n\n## Critério de aceite\n- [ ] Os 3 bancos/broker sobem no cluster com PVC e sobrevivem a restart do pod\n- [ ] A API conecta neles pelos nomes de Service\n\n## Dependências\n{{K8S-04}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 7"
+    },
+    {
+      "id": "K8S-08",
+      "title": "K8S-08 · Expor API, RabbitMQ UI e Grafana para a demo",
+      "milestone": "Fase 4 — Infra de entrega",
+      "labels": ["epico:kubernetes", "prioridade:obrigatorio", "tam:M", "caminho-critico"],
+      "body": "## Contexto\nO vídeo precisa alternar entre Swagger, Management UI do RabbitMQ e Grafana. Sem acesso externo, não há demo.\n\n## Escopo\n- [ ] `Ingress` (ou `NodePort`) para a API\n- [ ] Acesso externo à Management UI do RabbitMQ\n- [ ] Acesso externo ao Grafana\n- [ ] Documentar a alternativa via `kubectl port-forward` como plano B — é o caminho mais confiável para gravar\n\n## Critério de aceite\n- [ ] As 3 interfaces abrem no navegador do host\n- [ ] Os comandos estão no README\n\n## Dependências\n{{K8S-05}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 7"
+    },
+    {
+      "id": "K8S-09",
+      "title": "K8S-09 · Scripts deploy.sh e teardown.sh",
+      "milestone": "Fase 4 — Infra de entrega",
+      "labels": ["epico:kubernetes", "prioridade:entregavel", "tam:M"],
+      "body": "## Contexto\nCritério de aceite do edital: o professor precisa subir tudo seguindo um passo a passo. Um script reduz o passo a passo a um comando.\n\n## Escopo\n- [ ] `k8s/deploy.sh` aplicando os manifests **na ordem correta** (namespace → secret/configmap → bancos → aguardar readiness → API → Worker → observabilidade)\n- [ ] `k8s/teardown.sh` removendo tudo\n- [ ] Versão `.ps1` equivalente (o time está em Windows)\n- [ ] Mensagens de progresso e verificação de pré-requisitos (`kubectl`, cluster ativo)\n\n## Critério de aceite\n- [ ] Em um cluster limpo, um comando sobe o ambiente inteiro\n- [ ] Testado do zero por outra pessoa do grupo\n\n## Dependências\n{{K8S-07}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 7"
+    },
+
+    {
+      "id": "OBS-01",
+      "title": "OBS-01 · Health checks /health/live e /health/ready",
+      "milestone": "Fase 4 — Infra de entrega",
+      "labels": ["epico:observabilidade", "prioridade:obrigatorio", "tam:M"],
+      "body": "## Contexto\nRequisito explícito do edital: expor métricas de saúde. Também é pré-requisito das probes do Kubernetes.\n\n## Escopo\n- [ ] `/health/live` — só responde se o processo está vivo, **sem** checar dependências\n- [ ] `/health/ready` — checa Postgres, MongoDB e RabbitMQ\n- [ ] Pacotes `AspNetCore.HealthChecks.NpgSql`, `.MongoDb`, `.Rabbitmq`\n- [ ] Health check também no Worker\n\n## Critério de aceite\n- [ ] Derrubar o Postgres deixa `/health/ready` vermelho mas `/health/live` verde (o pod não é morto à toa)\n- [ ] Resposta em JSON listando cada dependência\n\n## Dependências\n{{DATA-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 8"
+    },
+    {
+      "id": "OBS-02",
+      "title": "OBS-02 · Endpoint /metrics no formato Prometheus",
+      "milestone": "Fase 4 — Infra de entrega",
+      "labels": ["epico:observabilidade", "prioridade:obrigatorio", "tam:M"],
+      "body": "## Contexto\nMitiga o risco **R10**: o edital cita Zabbix no título, mas o texto obrigatório é apenas expor `/health` ou `/metrics` + um dashboard Grafana com métrica real. Prometheus → Grafana é o caminho de menor risco.\n\n## Escopo\n- [ ] `OpenTelemetry.Exporter.Prometheus.AspNetCore` na API e no Worker\n- [ ] Instrumentação de runtime (`OpenTelemetry.Instrumentation.Runtime`) e de ASP.NET Core\n- [ ] Expor `/metrics`\n- [ ] Decidir se `/metrics` fica público ou restrito à rede do cluster\n\n## Critério de aceite\n- [ ] `curl /metrics` retorna formato de exposição do Prometheus\n- [ ] Métricas de requisições HTTP e de GC aparecem\n\n## Dependências\n{{OBS-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 8 · risco R10"
+    },
+    {
+      "id": "OBS-03",
+      "title": "OBS-03 · Métricas de negócio customizadas",
+      "milestone": "Fase 4 — Infra de entrega",
+      "labels": ["epico:observabilidade", "prioridade:obrigatorio", "tam:M"],
+      "body": "## Contexto\nMétrica de CPU qualquer aplicação tem. O que faz o dashboard parecer real na banca são as métricas do domínio.\n\n## Escopo\n- [ ] Counter `doacoes_recebidas_total` (incrementado pela API)\n- [ ] Counter `doacoes_processadas_total` (incrementado pelo Worker)\n- [ ] Counter `doacoes_duplicadas_descartadas_total` (idempotência em ação — ótimo de mostrar)\n- [ ] Histogram `doacao_processamento_duracao_seconds`\n- [ ] Gauge de profundidade da fila, se acessível\n\n## Critério de aceite\n- [ ] A diferença entre recebidas e processadas mostra o lag da fila em tempo real\n- [ ] As métricas aparecem no `/metrics` e são coletadas pelo Prometheus\n\n## Dependências\n{{OBS-02}} · {{MSG-06}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 8"
+    },
+    {
+      "id": "OBS-04",
+      "title": "OBS-04 · Prometheus no Kubernetes com scrape dos pods",
+      "milestone": "Fase 4 — Infra de entrega",
+      "labels": ["epico:observabilidade", "prioridade:obrigatorio", "tam:G"],
+      "body": "## Contexto\nSem coleta, não há dashboard.\n\n## Escopo\n- [ ] `Deployment` + `Service` + `ConfigMap` do Prometheus\n- [ ] `scrape_config` com service discovery do Kubernetes\n- [ ] Anotações `prometheus.io/scrape` e `prometheus.io/port` nos pods da API e do Worker\n- [ ] `kube-state-metrics` ou `cAdvisor` para métricas de CPU/memória dos pods (o edital cita isso explicitamente)\n\n## Critério de aceite\n- [ ] A página `/targets` do Prometheus mostra todos os alvos `UP`\n- [ ] Query de CPU por pod retorna dados\n\n## Dependências\n{{K8S-05}} · {{OBS-02}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 8"
+    },
+    {
+      "id": "OBS-05",
+      "title": "OBS-05 · Grafana com datasource provisionado",
+      "milestone": "Fase 4 — Infra de entrega",
+      "labels": ["epico:observabilidade", "prioridade:obrigatorio", "tam:M"],
+      "body": "## Contexto\nProvisionar por ConfigMap evita configurar na mão de novo se o pod reiniciar no meio da gravação.\n\n## Escopo\n- [ ] `Deployment` + `Service` do Grafana\n- [ ] Datasource Prometheus provisionado via ConfigMap\n- [ ] Credenciais de admin via Secret\n- [ ] Provisionamento de dashboards por ConfigMap (prepara {{OBS-06}})\n\n## Critério de aceite\n- [ ] Grafana sobe com o datasource já configurado, sem intervenção manual\n- [ ] Deletar o pod e recriar mantém a configuração\n\n## Dependências\n{{OBS-04}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 8"
+    },
+    {
+      "id": "OBS-06",
+      "title": "OBS-06 · Dashboard do Grafana com métricas reais",
+      "milestone": "Fase 4 — Infra de entrega",
+      "labels": ["epico:observabilidade", "prioridade:entregavel", "tam:G", "caminho-critico"],
+      "body": "## Contexto\n**Entregável obrigatório do edital e do roteiro do vídeo:** *\"O Grafana deve possuir pelo menos um dashboard configurado exibindo métricas reais da aplicação rodando\"*.\n\n## Escopo\n- [ ] Painéis: requisições HTTP/s, latência p95, taxa de erro\n- [ ] Painéis: CPU e memória por pod (citado nominalmente no edital)\n- [ ] Painéis: doações recebidas x processadas, duração do processamento\n- [ ] Exportar o JSON e versionar em `k8s/grafana/dashboards/`\n- [ ] Provisionar via ConfigMap para subir automaticamente\n\n## Critério de aceite\n- [ ] Fazer doações durante a demo faz os gráficos se moverem **em tempo real**\n- [ ] O dashboard aparece sozinho após um deploy limpo\n\n## Dependências\n{{OBS-05}} · {{OBS-03}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 8"
+    },
+    {
+      "id": "OBS-07",
+      "title": "OBS-07 · Logging estruturado com correlação API → fila → Worker",
+      "milestone": "Fase 4 — Infra de entrega",
+      "labels": ["epico:observabilidade", "prioridade:obrigatorio", "tam:M"],
+      "body": "## Contexto\nRastrear uma doação da requisição HTTP até o incremento no banco, atravessando a fila, é o que demonstra domínio da arquitetura na defesa.\n\n## Escopo\n- [ ] Serilog com sink de console em JSON (padrão para K8s)\n- [ ] Enriquecer com `TraceId`, nome do serviço e ambiente\n- [ ] Propagar o contexto de trace pelos headers da mensagem do MassTransit\n- [ ] Níveis de log adequados — não poluir o terminal da demo\n\n## Critério de aceite\n- [ ] Buscar por um `TraceId` traz os logs da API **e** do Worker para a mesma doação\n\n## Dependências\n{{AUTH-06}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 8"
+    },
+    {
+      "id": "OBS-08",
+      "title": "OBS-08 · Zabbix monitorando os nós e pods (opcional)",
+      "milestone": "Fase 6 — Bônus",
+      "labels": ["epico:observabilidade", "prioridade:bonus", "tam:GG"],
+      "body": "## Contexto\nO título do requisito no edital cita Zabbix, mas o texto obrigatório já é atendido por {{OBS-02}} e {{OBS-06}}. Fazer os dois é o cenário ideal; fazer só o Prometheus/Grafana atende o que está escrito.\n\n**Só começar esta issue com a Fase 5 já garantida.**\n\n## Escopo\n- [ ] Zabbix Server + Zabbix Agent no cluster\n- [ ] Monitoramento de nós e pods\n- [ ] Ao menos um trigger configurado\n\n## Critério de aceite\n- [ ] Frontend do Zabbix mostrando dados reais do cluster\n\n## Dependências\n{{OBS-06}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 8 · risco R10"
+    },
+
+    {
+      "id": "CI-01",
+      "title": "CI-01 · Workflow do GitHub Actions disparado em push na main",
+      "milestone": "Fase 1 — Fundação",
+      "labels": ["epico:cicd", "prioridade:obrigatorio", "tam:P"],
+      "body": "## Contexto\nRequisito obrigatório: *\"pipeline acionado a cada push na branch principal\"*. Criar cedo e vazio é melhor do que criar tarde e correndo.\n\n## Escopo\n- [ ] `.github/workflows/ci.yml`\n- [ ] Triggers: `push` na `main` e `pull_request`\n- [ ] `actions/setup-dotnet` com .NET 10\n- [ ] Cache de pacotes NuGet\n- [ ] Badge de status no README\n\n## Critério de aceite\n- [ ] Push na `main` dispara o workflow e ele aparece verde na aba Actions\n\n## Dependências\n{{INFRA-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 9"
+    },
+    {
+      "id": "CI-02",
+      "title": "CI-02 · Job de build (.NET) na esteira",
+      "milestone": "Fase 1 — Fundação",
+      "labels": ["epico:cicd", "prioridade:obrigatorio", "tam:P"],
+      "body": "## Contexto\nRequisito obrigatório: *\"O pipeline deve compilar o código (.NET build)\"*.\n\n## Escopo\n- [ ] `dotnet restore`\n- [ ] `dotnet build -c Release --no-restore`\n- [ ] Falhar em warning (`TreatWarningsAsErrors` já vem de {{INFRA-03}})\n\n## Critério de aceite\n- [ ] Um PR que quebra o build fica vermelho e bloqueia o merge\n\n## Dependências\n{{CI-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 9"
+    },
+    {
+      "id": "CI-03",
+      "title": "CI-03 · Job de testes na esteira",
+      "milestone": "Fase 1 — Fundação",
+      "labels": ["epico:cicd", "prioridade:bonus", "tam:P"],
+      "body": "## Contexto\nBônus do edital: testes de unidade *\"rodando obrigatoriamente dentro da esteira de CI\"*. Custa quase nada porque o `Domain` não tem dependências.\n\n## Escopo\n- [ ] `dotnet test -c Release --no-build --logger trx`\n- [ ] Publicar o resumo dos testes no sumário do workflow\n- [ ] Incluir {{TEST-01}} e {{TEST-02}}\n\n## Critério de aceite\n- [ ] O relatório de testes aparece no run do GitHub Actions\n- [ ] Teste quebrado reprova o pipeline\n\n## Dependências\n{{CI-02}} · {{TEST-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 9"
+    },
+    {
+      "id": "CI-04",
+      "title": "CI-04 · Build e push das imagens Docker para o GHCR",
+      "milestone": "Fase 4 — Infra de entrega",
+      "labels": ["epico:cicd", "prioridade:obrigatorio", "tam:M", "caminho-critico"],
+      "body": "## Contexto\n**Obrigatório pelo edital** e item explícito do roteiro do vídeo: *\"Demonstração do Pipeline de CI executando e gerando a imagem Docker com sucesso\"*.\n\n## Escopo\n- [ ] `docker/build-push-action` para a API e para o Worker\n- [ ] Login no GHCR com `GITHUB_TOKEN`\n- [ ] Tags: `sha-<short>` e `latest`\n- [ ] Cache de camadas entre builds\n- [ ] Tornar os packages públicos para o professor conseguir puxar\n\n## Critério de aceite\n- [ ] Após push na `main`, as duas imagens aparecem no GHCR\n- [ ] `docker pull` da imagem publicada funciona de outra máquina\n- [ ] O run do Actions serve como evidência para o vídeo\n\n## Dependências\n{{CI-02}} · {{K8S-02}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 9"
+    },
+    {
+      "id": "CI-05",
+      "title": "CI-05 · Deploy automatizado no Kubernetes (opcional)",
+      "milestone": "Fase 6 — Bônus",
+      "labels": ["epico:cicd", "prioridade:bonus", "tam:G"],
+      "body": "## Contexto\nO edital diz explicitamente que o deploy automatizado é **opcional**. Só fazer com a Fase 5 fechada.\n\n## Escopo\n- [ ] Job de deploy aplicando os manifests\n- [ ] Kubeconfig via secret do repositório\n- [ ] Estratégia de rollout e rollback\n\n## Critério de aceite\n- [ ] Push na `main` atualiza o cluster sem intervenção manual\n\n## Dependências\n{{CI-04}} · {{K8S-09}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 9"
+    },
+
+    {
+      "id": "DOC-01",
+      "title": "DOC-01 · README.md com passo a passo de execução local",
+      "milestone": "Fase 5 — Entrega",
+      "labels": ["epico:entregaveis", "prioridade:entregavel", "tam:G", "caminho-critico"],
+      "body": "## Contexto\n**Critério de aceite explícito do edital:** *\"Obrigatório conter um arquivo README.md com instruções claras e em passo a passo de como subir a infraestrutura e a aplicação localmente para correção dos professores\"*.\n\nSe o professor não conseguir subir, o resto do trabalho não é avaliado.\n\n## Escopo\n- [ ] Pré-requisitos com versões (Docker, kubectl, cluster local, .NET SDK)\n- [ ] Caminho A: subir tudo com `docker compose` (mais rápido para validar)\n- [ ] Caminho B: subir no Kubernetes com `k8s/deploy.sh`\n- [ ] Como gerar o Secret com a chave JWT\n- [ ] **Credenciais do gestor semeado** ({{DATA-04}})\n- [ ] URLs: Swagger, Management UI do RabbitMQ, Grafana — com os `port-forward` necessários\n- [ ] Fluxo de teste ponta a ponta em 6 comandos\n- [ ] Seção de troubleshooting (pod em CrashLoop, banco não sobe, porta ocupada)\n- [ ] Badge do CI e link do diagrama\n\n## Critério de aceite\n- [ ] **Alguém do grupo sobe tudo do zero em outra máquina seguindo só o README, sem perguntar nada**\n\n## Dependências\n{{K8S-09}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 10"
+    },
+    {
+      "id": "DOC-02",
+      "title": "DOC-02 · Diagrama de arquitetura",
+      "milestone": "Fase 5 — Entrega",
+      "labels": ["epico:entregaveis", "prioridade:entregavel", "tam:M"],
+      "body": "## Contexto\nEntregável 2 do edital. É também o **primeiro item do roteiro do vídeo** — a explicação começa por ele.\n\n## Escopo\n- [ ] Diagrama mostrando: os 2 microsserviços, os 2 bancos, o broker e as ferramentas de observabilidade\n- [ ] Indicar claramente o **fluxo assíncrono** da doação (o ponto que a banca quer ver)\n- [ ] Marcar quem escreve o `ValorArrecadado` (só o Worker)\n- [ ] Exportar PNG + manter o arquivo fonte (draw.io/Excalidraw) versionado\n- [ ] Incluir no README\n\n## Critério de aceite\n- [ ] O diagrama explica a arquitetura sozinho, sem narração\n\n## Dependências\nNenhuma — pode começar já.\n\n---\n`docs/BACKLOG.md` § ÉPICO 10"
+    },
+    {
+      "id": "DOC-03",
+      "title": "DOC-03 · PDF justificando a escolha dos bancos de dados",
+      "milestone": "Fase 5 — Entrega",
+      "labels": ["epico:entregaveis", "prioridade:entregavel", "tam:M"],
+      "body": "## Contexto\nEntregável 2b do edital: *\"Documento em PDF justificando por que os bancos de dados X e Y foram escolhidos\"*.\n\nA base já está escrita em `docs/BACKLOG.md` § 2.1 — este item é expandir e formatar.\n\n## Escopo\n- [ ] **PostgreSQL**: integridade transacional, unicidade de e-mail garantida no banco, incremento atômico do valor arrecadado, ACID no dinheiro\n- [ ] **MongoDB**: ledger append-only de doações processadas, escrita alta, schema flexível, sem joins, índice único como base da idempotência\n- [ ] **Por que não um só**: cargas de trabalho e garantias diferentes; separar isola o histórico de auditoria do caminho transacional\n- [ ] Citar as alternativas consideradas e por que foram descartadas\n- [ ] Exportar em PDF\n\n## Critério de aceite\n- [ ] A justificativa liga cada banco a uma característica **concreta** do sistema, não a chavão\n\n## Dependências\n{{DOC-02}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 10"
+    },
+    {
+      "id": "DOC-04",
+      "title": "DOC-04 · ADRs das decisões arquiteturais",
+      "milestone": "Fase 5 — Entrega",
+      "labels": ["epico:entregaveis", "prioridade:entregavel", "tam:M"],
+      "body": "## Contexto\nDá substância à defesa oral. Quando a banca perguntar *\"e se a mensagem chegar duas vezes?\"*, existe um documento pronto.\n\n## Escopo\n- [ ] `docs/adr/0001-transactional-outbox.md` (risco R1)\n- [ ] `docs/adr/0002-idempotencia-do-consumer.md` (risco R2)\n- [ ] `docs/adr/0003-ownership-do-valor-arrecadado.md` (risco R4 — por que coluna materializada e não soma em tempo real)\n- [ ] `docs/adr/0004-migration-no-startup.md`\n- [ ] Formato curto: contexto, decisão, consequências, alternativas descartadas\n\n## Critério de aceite\n- [ ] Cada ADR cabe em uma página e responde a uma pergunta provável da banca\n\n## Dependências\nNenhuma.\n\n---\n`docs/BACKLOG.md` § ÉPICO 10"
+    },
+    {
+      "id": "DOC-05",
+      "title": "DOC-05 · Swagger com autenticação Bearer e exemplos",
+      "milestone": "Fase 5 — Entrega",
+      "labels": ["epico:entregaveis", "prioridade:entregavel", "tam:M", "caminho-critico"],
+      "body": "## Contexto\nO roteiro do vídeo prevê autenticação *\"via Postman/Swagger\"*. Se o Swagger não tiver o botão de Authorize, a demo trava ao vivo.\n\n## Escopo\n- [ ] Habilitar Swagger UI também fora de `Development` (é assim que o professor vai testar)\n- [ ] Security definition Bearer com o botão **Authorize**\n- [ ] Agrupar endpoints por tag: Auth, Campanhas, Doações, Público\n- [ ] Exemplos de request e resposta nos principais endpoints\n- [ ] Documentar os códigos de status possíveis (400, 401, 403, 409, 202)\n\n## Critério de aceite\n- [ ] Dá para fazer o fluxo inteiro pelo Swagger: login → copiar token → Authorize → criar campanha → doar\n\n## Dependências\n{{CAMP-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 10"
+    },
+    {
+      "id": "DOC-06",
+      "title": "DOC-06 · Coleção Postman com o fluxo completo encadeado",
+      "milestone": "Fase 5 — Entrega",
+      "labels": ["epico:entregaveis", "prioridade:entregavel", "tam:M", "caminho-critico"],
+      "body": "## Contexto\nReduz muito o risco de errar durante a gravação. Copiar token na mão ao vivo é onde a demo costuma travar.\n\n## Escopo\n- [ ] Coleção versionada em `docs/postman/`\n- [ ] Requests na ordem da demo: login gestor → criar campanha → registrar doador → login doador → doar → consultar painel público\n- [ ] Script de teste capturando o token e o `idCampanha` em variáveis de ambiente automaticamente\n- [ ] Environment de exemplo (local e K8s)\n- [ ] Requests negativos para mostrar as regras: doação em campanha cancelada, campanha com data passada, doador tentando criar campanha (403)\n\n## Critério de aceite\n- [ ] \"Run collection\" executa o fluxo inteiro sem intervenção manual\n- [ ] Nenhum token é copiado à mão\n\n## Dependências\n{{MSG-03}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 10"
+    },
+    {
+      "id": "VID-01",
+      "title": "VID-01 · Roteiro cronometrado do vídeo",
+      "milestone": "Fase 5 — Entrega",
+      "labels": ["epico:entregaveis", "prioridade:entregavel", "tam:M", "caminho-critico"],
+      "body": "## Contexto\nO edital é específico: máximo 15 minutos, **não** ler código linha a linha, e a ordem dos itens é dada. Sem roteiro cronometrado, o vídeo estoura o tempo ou esquece um item obrigatório.\n\n## Escopo — seguir exatamente esta ordem\n- [ ] a) Explicação do diagrama de arquitetura\n- [ ] b) Pipeline de CI executando e gerando a imagem Docker\n- [ ] c) `kubectl get pods` + dashboard do Grafana com dados em tempo real\n- [ ] d.i) Autenticação via Postman/Swagger e obtenção do token JWT\n- [ ] d.ii) Criação de uma campanha\n- [ ] d.iii) Doação: mostrar o payload → **abrir a Management UI do RabbitMQ com a mensagem passando pela fila** → consultar a API pública provando que o valor foi atualizado pelo Worker\n- [ ] Distribuir o tempo por bloco e marcar quem fala o quê\n- [ ] Preparar o ambiente antes: pods no ar, Grafana aberto, Postman com variáveis prontas\n\n## Critério de aceite\n- [ ] Ensaio completo cabe em menos de 15 minutos\n- [ ] Todos os 6 itens obrigatórios estão no roteiro\n\n## Dependências\nTodas as fases anteriores.\n\n---\n`docs/BACKLOG.md` § ÉPICO 10"
+    },
+    {
+      "id": "VID-02",
+      "title": "VID-02 · Gravação e upload do vídeo (máx. 15 min)",
+      "milestone": "Fase 5 — Entrega",
+      "labels": ["epico:entregaveis", "prioridade:entregavel", "tam:G"],
+      "body": "## Contexto\nEntregável 3 do edital.\n\n## Escopo\n- [ ] Ensaiar o roteiro **uma vez** antes de gravar de verdade\n- [ ] Gravar com áudio limpo e fonte de terminal grande o suficiente para leitura\n- [ ] Verificar que a mensagem no RabbitMQ e o valor atualizado aparecem legíveis\n- [ ] Upload no YouTube (não listado) ou plataforma equivalente\n- [ ] Testar o link em uma aba anônima\n\n## Critério de aceite\n- [ ] Duração ≤ 15 minutos\n- [ ] Link acessível sem login\n\n## Dependências\n{{VID-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 10"
+    },
+    {
+      "id": "DOC-07",
+      "title": "DOC-07 · Relatório de entrega (PDF/TXT)",
+      "milestone": "Fase 5 — Entrega",
+      "labels": ["epico:entregaveis", "prioridade:entregavel", "tam:P"],
+      "body": "## Contexto\nEntregável 4 do edital, postado **na data da entrega**. É burocrático e é exatamente por isso que costuma ser esquecido.\n\n## Escopo\n- [ ] Nome do grupo\n- [ ] Participantes e **usernames no Discord**\n- [ ] Link da documentação\n- [ ] Link do(s) repositório(s)\n- [ ] Link do vídeo\n- [ ] Exportar em PDF ou TXT e postar na data\n\n## Critério de aceite\n- [ ] Todos os 5 itens preenchidos\n- [ ] Todos os links testados em aba anônima\n\n## Dependências\n{{VID-02}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 10"
+    },
+
+    {
+      "id": "BON-01",
+      "title": "BON-01 · API Gateway com Ocelot",
+      "milestone": "Fase 6 — Bônus",
+      "labels": ["epico:bonus", "prioridade:bonus", "tam:G"],
+      "body": "## Contexto\nBônus explícito do edital: *\"Utilização de um API Gateway (ex.: Ocelot, KrakenD) roteando as requisições para os microsserviços\"*. Sem impacto na nota.\n\n## Escopo\n- [ ] Projeto de gateway com Ocelot\n- [ ] Roteamento para a API\n- [ ] Validação de JWT no gateway\n- [ ] Deployment no K8s e ajuste do Ingress\n\n## Critério de aceite\n- [ ] Todo o tráfego externo passa pelo gateway\n\n## Dependências\n{{K8S-08}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 11"
+    },
+    {
+      "id": "BON-02",
+      "title": "BON-02 · Testes de integração com Testcontainers",
+      "milestone": "Fase 6 — Bônus",
+      "labels": ["epico:bonus", "prioridade:bonus", "tam:G"],
+      "body": "## Contexto\nProva o fluxo assíncrono ponta a ponta com Postgres e RabbitMQ reais, sem mock.\n\n## Escopo\n- [ ] `Testcontainers` para Postgres, MongoDB e RabbitMQ\n- [ ] `WebApplicationFactory` para a API\n- [ ] Teste ponta a ponta: doar → consumir → verificar o valor no painel público\n- [ ] Rodar no CI (atenção ao tempo de execução)\n\n## Critério de aceite\n- [ ] O teste ponta a ponta passa localmente e no CI\n\n## Dependências\n{{MSG-06}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 11"
+    },
+    {
+      "id": "BON-03",
+      "title": "BON-03 · HPA escalando o Worker por profundidade de fila",
+      "milestone": "Fase 6 — Bônus",
+      "labels": ["epico:bonus", "prioridade:bonus", "tam:G"],
+      "body": "## Contexto\nDemonstra escalabilidade de verdade — o tema central do enunciado. Rende bem no vídeo se houver tempo.\n\n## Escopo\n- [ ] `HorizontalPodAutoscaler` para o Worker\n- [ ] Métrica customizada de profundidade da fila (KEDA é o caminho mais direto)\n- [ ] Demonstrar escala sob carga\n\n## Critério de aceite\n- [ ] Gerar carga de doações aumenta o número de réplicas do Worker automaticamente\n\n## Dependências\n{{K8S-06}} · {{OBS-04}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 11"
+    },
+    {
+      "id": "BON-04",
+      "title": "BON-04 · Rate limiting no login e no painel público",
+      "milestone": "Fase 6 — Bônus",
+      "labels": ["epico:bonus", "prioridade:bonus", "tam:M"],
+      "body": "## Contexto\nEndpoints anônimos expostos sem limite são convite a abuso. Barato de fazer com o rate limiter nativo do ASP.NET Core.\n\n## Escopo\n- [ ] `AddRateLimiter` no ASP.NET Core\n- [ ] Política mais restritiva no `/auth/login` (anti brute force)\n- [ ] Política no `/publico/campanhas`\n- [ ] Retornar 429 com `Retry-After`\n\n## Critério de aceite\n- [ ] Exceder o limite retorna 429\n- [ ] Uso normal não é afetado\n\n## Dependências\n{{AUTH-05}} · {{PUB-01}}\n\n---\n`docs/BACKLOG.md` § ÉPICO 11"
+    }
+  ]
+}
