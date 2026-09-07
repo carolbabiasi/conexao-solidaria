@@ -1,5 +1,6 @@
 using GestorONG.API.Middleware;
 using GestorONG.Infrastructure;
+using GestorONG.Infrastructure.Mensageria;
 using GestorONG.Infrastructure.Persistencia;
 using GestorONG.Infrastructure.Seguranca;
 
@@ -12,6 +13,7 @@ builder.Services.AddExceptionHandler<TratadorGlobalDeExcecoes>();
 
 builder.Services.AdicionarInfraestrutura(builder.Configuration);
 builder.Services.AdicionarAutenticacao(builder.Configuration);
+builder.Services.AdicionarMensageria(builder.Configuration, comOutbox: true);
 
 var app = builder.Build();
 

@@ -2,6 +2,9 @@
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" />
+    <PackageReference Include="MassTransit" />
+    <PackageReference Include="MassTransit.EntityFrameworkCore" />
+    <PackageReference Include="MassTransit.RabbitMQ" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
@@ -10,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GestorONG.Application\GestorONG.Application.csproj" />
+    <ProjectReference Include="..\GestorONG.Contracts\GestorONG.Contracts.csproj" />
   </ItemGroup>
 
 </Project>
