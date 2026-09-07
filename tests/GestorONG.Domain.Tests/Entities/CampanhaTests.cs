@@ -23,8 +23,6 @@ public class CampanhaTests
             tempo);
     }
 
-    // ---------------------------------------------------------------- DOM-04
-
     [Fact]
     public void Nasce_com_valor_arrecadado_zerado() =>
         Assert.Equal(decimal.Zero, CriarValida().ValorArrecadado);
@@ -37,8 +35,6 @@ public class CampanhaTests
     public void Gera_identificador() =>
         Assert.NotEqual(Guid.Empty, CriarValida().Id);
 
-    // Critério de aceite da DOM-04: nenhum código fora do domínio pode
-    // atribuir ValorArrecadado. O Worker é o único escritor (risco R4).
     [Fact]
     public void ValorArrecadado_nao_expoe_setter_publico()
     {
@@ -46,15 +42,11 @@ public class CampanhaTests
         Assert.False(setter is not null && setter.IsPublic);
     }
 
-    // ---------------------------------------------------------------- DOM-05
-
-    // Risco R5: a regra depende de "agora", e é o TimeProvider injetado que
-    // permite testar ontem e amanhã sem depender do relógio da máquina.
     [Fact]
     public void Rejeita_data_de_termino_no_passado()
     {
         var tempo = Relogio();
-        tempo.SetUtcNow(Agora.AddDays(60));  // o tempo passou; a campanha venceu
+        tempo.SetUtcNow(Agora.AddDays(60));
 
         var excecao = Assert.Throws<DomainValidationException>(() => Campanha.Criar(
             "Cestas básicas",
@@ -111,11 +103,8 @@ public class CampanhaTests
             metaFinanceira: 0m,
             tempo: Relogio()));
 
-        // título, descrição, meta e ordem das datas
         Assert.Equal(4, excecao.Violacoes.Count);
     }
-
-    // ------------------------------------------------- abertura para doação
 
     [Fact]
     public void Esta_aberta_quando_ativa_e_vigente() =>
@@ -131,8 +120,6 @@ public class CampanhaTests
 
         Assert.False(campanha.EstaAbertaParaDoacao(tempo));
     }
-
-    // ---------------------------------------------------------------- DOM-08
 
     [Fact]
     public void Registrar_arrecadacao_soma_ao_total()
@@ -151,8 +138,6 @@ public class CampanhaTests
     public void Registrar_arrecadacao_rejeita_valor_nao_positivo(decimal valor) =>
         Assert.Throws<DomainValidationException>(() => CriarValida().RegistrarArrecadacao(valor));
 
-    // Decisão registrada em docs/adr/0001-transicao-ao-atingir-a-meta.md:
-    // atingir a meta não encerra a campanha, senão ela passaria a recusar dinheiro.
     [Fact]
     public void Nao_conclui_sozinha_ao_atingir_a_meta()
     {

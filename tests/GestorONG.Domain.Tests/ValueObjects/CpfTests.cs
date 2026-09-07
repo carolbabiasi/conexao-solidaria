@@ -14,18 +14,16 @@ public class CpfTests
         Assert.True(Cpf.TryParse(entrada, out _));
 
     [Theory]
-    [InlineData("111.444.777-36")]  // segundo dígito verificador trocado
-    [InlineData("111.444.777-45")]  // primeiro dígito verificador trocado
-    [InlineData("1114447773")]      // 10 dígitos
-    [InlineData("111444777351")]    // 12 dígitos
+    [InlineData("111.444.777-36")]
+    [InlineData("111.444.777-45")]
+    [InlineData("1114447773")]
+    [InlineData("111444777351")]
     [InlineData("abc")]
     [InlineData("")]
     [InlineData(null)]
     public void Rejeita_cpf_invalido(string? entrada) =>
         Assert.False(Cpf.TryParse(entrada, out _));
 
-    // Sequências repetidas passam no cálculo dos dígitos verificadores,
-    // por isso precisam de rejeição explícita.
     [Theory]
     [InlineData("000.000.000-00")]
     [InlineData("111.111.111-11")]
@@ -47,7 +45,6 @@ public class CpfTests
         Assert.Equal("111.444.777-35", cpf.Formatado());
     }
 
-    // Risco R9 (LGPD): ToString é o caminho por onde o CPF vaza para o log.
     [Fact]
     public void ToString_mascara_o_valor()
     {

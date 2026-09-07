@@ -29,8 +29,6 @@ public class DoacaoTests
         tempo,
         status);
 
-    // ---------------------------------------------------------------- DOM-06
-
     [Fact]
     public void Nasce_pendente()
     {
@@ -55,8 +53,6 @@ public class DoacaoTests
         Assert.NotEqual(Guid.Empty, doacao.Id);
     }
 
-    // O Worker consome de uma fila at-least-once, então a mesma mensagem pode
-    // chegar duas vezes. Marcar de novo não pode explodir. Ver risco R2.
     [Fact]
     public void Marcar_como_processada_e_idempotente()
     {
@@ -68,8 +64,6 @@ public class DoacaoTests
 
         Assert.Equal(StatusDoacao.Processada, doacao.Status);
     }
-
-    // ---------------------------------------------------------------- DOM-07
 
     [Fact]
     public void Rejeita_doacao_para_campanha_cancelada()
@@ -93,8 +87,6 @@ public class DoacaoTests
         Assert.Contains(excecao.Violacoes, v => v.Mensagem.Contains("concluída", StringComparison.Ordinal));
     }
 
-    // Nada transiciona a campanha sozinha, então ela pode continuar Ativa
-    // depois da data de término. A data é a verdade, não o status.
     [Fact]
     public void Rejeita_doacao_para_campanha_vencida_ainda_marcada_como_ativa()
     {

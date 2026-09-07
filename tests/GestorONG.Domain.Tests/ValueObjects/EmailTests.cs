@@ -13,21 +13,19 @@ public class EmailTests
         Assert.True(Email.TryParse(entrada, out _));
 
     [Theory]
-    [InlineData("ana@localhost")]   // sem domínio de topo
-    [InlineData("ana@x.c")]         // TLD com um caractere
-    [InlineData("ana@@x.com")]      // dois arrobas
-    [InlineData("@x.com")]          // sem parte local
-    [InlineData("ana@")]            // sem domínio
-    [InlineData("ana@x..com")]      // pontos consecutivos
-    [InlineData("an a@x.com")]      // espaço no meio
+    [InlineData("ana@localhost")]
+    [InlineData("ana@x.c")]
+    [InlineData("ana@@x.com")]
+    [InlineData("@x.com")]
+    [InlineData("ana@")]
+    [InlineData("ana@x..com")]
+    [InlineData("an a@x.com")]
     [InlineData("ana")]
     [InlineData("")]
     [InlineData(null)]
     public void Rejeita_email_invalido(string? entrada) =>
         Assert.False(Email.TryParse(entrada, out _));
 
-    // Sem normalização, o índice único da DATA-02 deixaria passar
-    // Ana@X.com e ana@x.com como usuários distintos.
     [Fact]
     public void Normaliza_caixa_e_espacos_nas_pontas()
     {

@@ -4,9 +4,6 @@ using GestorONG.Domain.ValueObjects;
 
 namespace GestorONG.Domain.Entities;
 
-/// <summary>
-/// Usuário da plataforma, em um dos dois perfis previstos pelo edital.
-/// </summary>
 public sealed class Usuario
 {
     private const int TamanhoMaximoNome = 200;
@@ -15,10 +12,7 @@ public sealed class Usuario
     public string NomeCompleto { get; private set; }
     public Email Email { get; private set; }
     public Cpf Cpf { get; private set; }
-
-    /// <summary>Hash da senha. O domínio nunca vê nem armazena a senha em claro.</summary>
     public string SenhaHash { get; private set; }
-
     public Role Role { get; private set; }
     public DateTimeOffset CriadoEm { get; private set; }
 
@@ -40,11 +34,6 @@ public sealed class Usuario
         CriadoEm = criadoEm;
     }
 
-    /// <summary>
-    /// Cria um usuário. O parâmetro é <paramref name="senhaHash"/>, não senha:
-    /// não existe caminho no domínio que aceite texto puro, o que impede que
-    /// uma senha em claro chegue ao banco por descuido.
-    /// </summary>
     public static Usuario Criar(
         string? nomeCompleto,
         Email email,
@@ -94,9 +83,5 @@ public sealed class Usuario
             criadoEm);
     }
 
-    /// <summary>
-    /// Só o identificador: a representação padrão de um registro com CPF, e-mail
-    /// e hash de senha não deve ser algo que se possa jogar em um log.
-    /// </summary>
     public override string ToString() => $"Usuario({Id})";
 }

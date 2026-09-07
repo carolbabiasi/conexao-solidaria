@@ -3,14 +3,6 @@ using GestorONG.Domain.Exceptions;
 
 namespace GestorONG.Domain.Entities;
 
-/// <summary>
-/// Campanha de arrecadação.
-/// <para>
-/// <see cref="ValorArrecadado"/> é materializado, não calculado a cada leitura,
-/// e o Worker é o único componente que o escreve — a API publica o evento e não
-/// toca no valor. Ver <c>docs/BACKLOG.md</c>, risco R4.
-/// </para>
-/// </summary>
 public sealed class Campanha
 {
     private const int TamanhoMaximoTitulo = 200;
@@ -23,11 +15,6 @@ public sealed class Campanha
     public DateTimeOffset DataFim { get; private set; }
     public decimal MetaFinanceira { get; private set; }
     public StatusCampanha Status { get; private set; }
-
-    /// <summary>
-    /// Total já arrecadado. Sem setter público: a única forma de alterá-lo é
-    /// <see cref="RegistrarArrecadacao"/>, chamado exclusivamente pelo Worker.
-    /// </summary>
     public decimal ValorArrecadado { get; private set; }
 
     private Campanha(
@@ -49,14 +36,6 @@ public sealed class Campanha
         ValorArrecadado = decimal.Zero;
     }
 
-    /// <summary>
-    /// Cria uma campanha aplicando as regras do edital.
-    /// <para>
-    /// O <paramref name="tempo"/> é injetado de propósito. Comparar contra
-    /// <c>DateTime.Now</c> dentro de um contêiner em UTC produz um bug que só
-    /// aparece em produção, e que teste nenhum pega. Ver risco R5.
-    /// </para>
-    /// </summary>
     public static Campanha Criar(
         string? titulo,
         string? descricao,
@@ -133,29 +112,12 @@ public sealed class Campanha
             status);
     }
 
-    /// <summary>
-    /// Indica se a campanha aceita doações neste momento: precisa estar
-    /// <see cref="StatusCampanha.Ativa"/> e ainda vigente.
-    /// </summary>
     public bool EstaAbertaParaDoacao(TimeProvider tempo)
     {
         ArgumentNullException.ThrowIfNull(tempo);
         return Status == StatusCampanha.Ativa && DataFim >= tempo.GetUtcNow();
     }
 
-    /// <summary>
-    /// Soma um valor ao total arrecadado.
-    /// <para>
-    /// <b>Chamado apenas pelo Worker</b>, ao consumir um
-    /// <c>DoacaoRecebidaEvent</c>. A API não invoca este método — ela publica o
-    /// evento e devolve 202. Ver risco R4.
-    /// </para>
-    /// <para>
-    /// A campanha <b>não</b> transita para <see cref="StatusCampanha.Concluida"/>
-    /// ao atingir a meta: encerrar sozinha recusaria doações que a ONG quer
-    /// receber. Ver <c>docs/adr/0001-transicao-ao-atingir-a-meta.md</c>.
-    /// </para>
-    /// </summary>
     public void RegistrarArrecadacao(decimal valor)
     {
         if (valor <= decimal.Zero)
@@ -168,7 +130,6 @@ public sealed class Campanha
         ValorArrecadado += valor;
     }
 
-    /// <summary>Percentual da meta já atingido. Usado pelo painel público (PUB-03).</summary>
     public decimal PercentualAtingido() =>
         MetaFinanceira <= decimal.Zero
             ? decimal.Zero

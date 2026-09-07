@@ -57,8 +57,6 @@ public class UsuarioTests
         Assert.Equal(2, excecao.Violacoes.Count);
     }
 
-    // Risco R9 (LGPD): a representação padrão da entidade não pode carregar
-    // CPF, e-mail ou hash de senha para dentro de um log estruturado.
     [Fact]
     public void ToString_nao_vaza_dados_pessoais()
     {

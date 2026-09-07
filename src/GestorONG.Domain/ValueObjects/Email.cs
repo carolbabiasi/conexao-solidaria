@@ -3,24 +3,15 @@ using GestorONG.Domain.Exceptions;
 
 namespace GestorONG.Domain.ValueObjects;
 
-/// <summary>
-/// Endereço de e-mail normalizado.
-/// <para>
-/// A normalização não é cosmética: o e-mail é único no banco (DATA-02) e, sem
-/// ela, <c>Ana@X.com</c> e <c>ana@x.com</c> viram dois usuários distintos.
-/// </para>
-/// </summary>
 public sealed record Email
 {
     private const int TamanhoMaximo = 254;
     private const int TamanhoMaximoParteLocal = 64;
 
-    /// <summary>Valor normalizado: sem espaços nas pontas e em minúsculas.</summary>
     public string Valor { get; }
 
     private Email(string valor) => Valor = valor;
 
-    /// <summary>Cria um e-mail ou lança <see cref="DomainValidationException"/>.</summary>
     public static Email Criar(string? entrada)
     {
         if (!TryParse(entrada, out var email))
@@ -31,7 +22,6 @@ public sealed record Email
         return email;
     }
 
-    /// <summary>Tenta criar um e-mail sem lançar exceção.</summary>
     public static bool TryParse(string? entrada, [NotNullWhen(true)] out Email? email)
     {
         email = null;
@@ -53,10 +43,6 @@ public sealed record Email
 
     public override string ToString() => Valor;
 
-    /// <summary>
-    /// Validação pragmática: cobre o que aparece em cadastro real sem tentar
-    /// implementar a RFC 5322 inteira, que aceita coisas que nenhum provedor usa.
-    /// </summary>
     private static bool EhValido(string valor)
     {
         if (valor.Length > TamanhoMaximo)
@@ -76,7 +62,6 @@ public sealed record Email
 
         var arroba = valor.IndexOf('@', StringComparison.Ordinal);
 
-        // Precisa de parte local antes do @ e de exatamente um @.
         if (arroba <= 0 || arroba != valor.LastIndexOf('@'))
         {
             return false;
@@ -100,8 +85,6 @@ public sealed record Email
             return false;
         }
 
-        // O domínio precisa de um ponto e de um TLD com pelo menos 2 caracteres,
-        // o que rejeita "ana@localhost" e "ana@x.c".
         var ultimoPonto = dominio.LastIndexOf('.');
         if (ultimoPonto <= 0)
         {
