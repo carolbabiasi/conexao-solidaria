@@ -1,5 +1,6 @@
 using GestorONG.Application.Abstracoes;
 using GestorONG.Contracts.V1;
+using GestorONG.Infrastructure.Observabilidade;
 using MassTransit;
 
 namespace GestorONG.Worker.Consumidores;
@@ -9,12 +10,14 @@ public sealed class DoacaoRecebidaConsumer(
     ICampanhaRepository campanhas,
     IDoacaoRepository doacoes,
     TimeProvider tempo,
+    MetricasDeNegocio metricas,
     ILogger<DoacaoRecebidaConsumer> logger) : IConsumer<DoacaoRecebidaEvent>
 {
     public async Task Consume(ConsumeContext<DoacaoRecebidaEvent> contexto)
     {
         var evento = contexto.Message;
         var cancellationToken = contexto.CancellationToken;
+        var inicio = tempo.GetTimestamp();
 
         var primeiraVez = await ledger.TentarRegistrarAsync(
             evento.IdDoacao,
@@ -26,6 +29,8 @@ public sealed class DoacaoRecebidaConsumer(
 
         if (!primeiraVez)
         {
+            metricas.DoacoesDuplicadasDescartadas.Add(1);
+
             logger.LogInformation(
                 "Doacao {IdDoacao} ja processada. Redelivery descartada sem incrementar.",
                 evento.IdDoacao);
@@ -51,6 +56,11 @@ public sealed class DoacaoRecebidaConsumer(
         await doacoes.MarcarComoProcessadaAsync(evento.IdDoacao, cancellationToken);
 
         var campanha = await campanhas.ObterPorIdAsync(evento.IdCampanha, cancellationToken);
+
+        metricas.DoacoesProcessadas.Add(1);
+        metricas.ValorDoado.Add((double)evento.Valor);
+        metricas.DuracaoDoProcessamento.Record(
+            tempo.GetElapsedTime(inicio).TotalSeconds);
 
         logger.LogInformation(
             "Doacao {IdDoacao} processada. Campanha {IdCampanha} recebeu {Valor}. Total agora: {Total}.",

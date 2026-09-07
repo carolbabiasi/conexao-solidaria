@@ -1,9 +1,10 @@
 using GestorONG.Application.Abstracoes;
 using GestorONG.Infrastructure;
 using GestorONG.Infrastructure.Mensageria;
+using GestorONG.Infrastructure.Observabilidade;
 using GestorONG.Worker.Consumidores;
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AdicionarInfraestrutura(builder.Configuration);
 
@@ -11,12 +12,16 @@ builder.Services.AdicionarMensageria(
     builder.Configuration,
     consumidores => consumidores.AddConsumer<DoacaoRecebidaConsumer>());
 
-var host = builder.Build();
+builder.Services.AdicionarObservabilidade(builder.Configuration, "gestorong-worker");
 
-using (var escopo = host.Services.CreateScope())
+var app = builder.Build();
+
+using (var escopo = app.Services.CreateScope())
 {
     var ledger = escopo.ServiceProvider.GetRequiredService<IDoacaoLedgerRepository>();
     await ledger.GarantirIndicesAsync();
 }
 
-await host.RunAsync();
+app.MapearObservabilidade();
+
+await app.RunAsync();

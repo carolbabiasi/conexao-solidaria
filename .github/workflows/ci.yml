@@ -18,26 +18,27 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: "true"
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
   SOLUTION: GestorONG.slnx
+  REGISTRY: ghcr.io
 
 jobs:
 
   build:
-    name: Build (.NET)
+    name: Build e testes
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Instalar .NET SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       # A chave inclui Directory.Packages.props porque e la que as versoes
       # dos pacotes vivem (versionamento central, ver INFRA-03).
       - name: Cache de pacotes NuGet
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('Directory.Packages.props', '**/*.csproj') }}
@@ -64,8 +65,63 @@ jobs:
 
       - name: Publicar resultado dos testes
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: resultado-dos-testes
           path: ./TestResults/*.trx
           if-no-files-found: warn
+
+  imagens:
+    name: Imagem Docker (${{ matrix.servico }})
+    runs-on: ubuntu-latest
+    needs: build
+
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - servico: api
+            dockerfile: src/GestorONG.API/Dockerfile
+          - servico: worker
+            dockerfile: src/GestorONG.Worker/Dockerfile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Configurar Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # Em pull_request o job apenas valida que a imagem compila.
+      # O push acontece nos pushes na main.
+      - name: Login no GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Metadados e tags
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.servico }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-,format=short
+
+      - name: Build e push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
