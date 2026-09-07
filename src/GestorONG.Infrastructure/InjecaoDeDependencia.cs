@@ -1,6 +1,7 @@
 using GestorONG.Application.Abstracoes;
 using GestorONG.Infrastructure.Persistencia;
 using GestorONG.Infrastructure.Persistencia.Repositorios;
+using GestorONG.Infrastructure.Seguranca;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,6 +27,9 @@ public static class InjecaoDeDependencia
         servicos.AddScoped<IDoacaoRepository, DoacaoRepository>();
 
         servicos.TryAddSingletonTimeProvider();
+
+        servicos.AddScoped<IPasswordHasher, PasswordHasher>();
+        servicos.AddScoped<IJwtTokenService, JwtTokenService>();
 
         return servicos;
     }
