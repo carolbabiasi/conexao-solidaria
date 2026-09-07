@@ -16,6 +16,14 @@ public sealed class Usuario
     public Role Role { get; private set; }
     public DateTimeOffset CriadoEm { get; private set; }
 
+    private Usuario()
+    {
+        NomeCompleto = null!;
+        Email = null!;
+        Cpf = null!;
+        SenhaHash = null!;
+    }
+
     private Usuario(
         Guid id,
         string nomeCompleto,

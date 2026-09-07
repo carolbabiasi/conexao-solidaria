@@ -17,6 +17,12 @@ public sealed class Campanha
     public StatusCampanha Status { get; private set; }
     public decimal ValorArrecadado { get; private set; }
 
+    private Campanha()
+    {
+        Titulo = null!;
+        Descricao = null!;
+    }
+
     private Campanha(
         Guid id,
         string titulo,
