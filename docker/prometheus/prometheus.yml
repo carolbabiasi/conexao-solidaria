@@ -1,0 +1,27 @@
+# Configuracao minima do Prometheus para desenvolvimento local.
+# Os alvos reais da API e do Worker entram na OBS-02 (endpoint /metrics)
+# e na OBS-04 (scrape dentro do Kubernetes).
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    ambiente: local
+
+scrape_configs:
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Descomente quando a API expuser /metrics (OBS-02).
+  # Rodando a API fora do Docker, host.docker.internal alcanca o host.
+  # - job_name: gestorong-api
+  #   metrics_path: /metrics
+  #   static_configs:
+  #     - targets: ["host.docker.internal:5000"]
+
+  # - job_name: gestorong-worker
+  #   metrics_path: /metrics
+  #   static_configs:
+  #     - targets: ["host.docker.internal:5001"]

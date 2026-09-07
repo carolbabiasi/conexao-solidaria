@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Dominio puro: sem ProjectReference e sem PackageReference.
+    Isso e o que permite os testes de unidade rodarem no CI sem infraestrutura.
+  -->
+
+</Project>

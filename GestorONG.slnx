@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/GestorONG.API/GestorONG.API.csproj" />
+    <Project Path="src/GestorONG.Application/GestorONG.Application.csproj" />
+    <Project Path="src/GestorONG.Contracts/GestorONG.Contracts.csproj" />
+    <Project Path="src/GestorONG.Domain/GestorONG.Domain.csproj" />
+    <Project Path="src/GestorONG.Infrastructure/GestorONG.Infrastructure.csproj" />
+    <Project Path="src/GestorONG.Worker/GestorONG.Worker.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/GestorONG.Domain.Tests/GestorONG.Domain.Tests.csproj" />
+  </Folder>
+</Solution>
