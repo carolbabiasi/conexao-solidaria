@@ -1,11 +1,6 @@
-# Contexto de build: a raiz do repositorio.
-#   docker build -f src/GestorONG.API/Dockerfile -t gestorong-api .
-
 FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 WORKDIR /src
 
-# Copia so o necessario para o restore, para a camada ser reaproveitada
-# enquanto nenhuma dependencia mudar.
 COPY Directory.Build.props Directory.Packages.props ./
 COPY GestorONG.slnx ./
 COPY src/GestorONG.Domain/GestorONG.Domain.csproj                 src/GestorONG.Domain/
@@ -25,7 +20,6 @@ RUN dotnet publish src/GestorONG.API/GestorONG.API.csproj \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS final
 WORKDIR /app
 
-# Usuario nao-root: o pod nao deve rodar como root.
 RUN adduser --disabled-password --home /app --gecos '' gestorong \
     && chown -R gestorong /app
 USER gestorong

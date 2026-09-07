@@ -1,6 +1,3 @@
-# Contexto de build: a raiz do repositorio.
-#   docker build -f src/GestorONG.Worker/Dockerfile -t gestorong-worker .
-
 FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 WORKDIR /src
 
@@ -29,8 +26,6 @@ USER gestorong
 
 COPY --from=build /app/publish .
 
-# Nao expoe API publica: a porta serve apenas para /health e /metrics,
-# consumidos pelas probes do Kubernetes e pelo Prometheus.
 ENV ASPNETCORE_HTTP_PORTS=8080 \
     DOTNET_gcServer=1
 EXPOSE 8080

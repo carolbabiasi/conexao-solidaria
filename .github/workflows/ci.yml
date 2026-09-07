@@ -1,7 +1,5 @@
 name: CI
 
-# Requisito obrigatorio do edital: pipeline acionado a cada push na branch
-# principal. O gatilho em pull_request faz cada PR chegar ja validada.
 on:
   push:
     branches: [main]
@@ -35,8 +33,6 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      # A chave inclui Directory.Packages.props porque e la que as versoes
-      # dos pacotes vivem (versionamento central, ver INFRA-03).
       - name: Cache de pacotes NuGet
         uses: actions/cache@v6
         with:
@@ -48,13 +44,9 @@ jobs:
       - name: Restore
         run: dotnet restore ${{ env.SOLUTION }}
 
-      # TreatWarningsAsErrors vem do Directory.Build.props (INFRA-03),
-      # entao qualquer aviso derruba este passo.
       - name: Build (Release)
         run: dotnet build ${{ env.SOLUTION }} -c Release --no-restore
 
-      # O dominio nao tem dependencia de infraestrutura, entao a suite roda
-      # na esteira sem banco, broker nem container.
       - name: Testes de unidade
         run: >
           dotnet test ${{ env.SOLUTION }}
@@ -96,8 +88,6 @@ jobs:
       - name: Configurar Buildx
         uses: docker/setup-buildx-action@v4
 
-      # Em pull_request o job apenas valida que a imagem compila.
-      # O push acontece nos pushes na main.
       - name: Login no GHCR
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v4
