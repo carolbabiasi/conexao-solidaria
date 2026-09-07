@@ -12,6 +12,10 @@ public sealed class Doacao
     public DateTimeOffset DataCriacao { get; private set; }
     public StatusDoacao Status { get; private set; }
 
+    private Doacao()
+    {
+    }
+
     private Doacao(
         Guid id,
         Guid idCampanha,
