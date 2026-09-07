@@ -51,3 +51,21 @@ jobs:
       # entao qualquer aviso derruba este passo.
       - name: Build (Release)
         run: dotnet build ${{ env.SOLUTION }} -c Release --no-restore
+
+      # O dominio nao tem dependencia de infraestrutura, entao a suite roda
+      # na esteira sem banco, broker nem container.
+      - name: Testes de unidade
+        run: >
+          dotnet test ${{ env.SOLUTION }}
+          -c Release
+          --no-build
+          --logger "trx;LogFileName=testes.trx"
+          --results-directory ./TestResults
+
+      - name: Publicar resultado dos testes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultado-dos-testes
+          path: ./TestResults/*.trx
+          if-no-files-found: warn
