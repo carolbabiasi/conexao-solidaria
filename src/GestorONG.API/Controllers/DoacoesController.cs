@@ -4,6 +4,7 @@ using GestorONG.Application.Abstracoes;
 using GestorONG.Application.Excecoes;
 using GestorONG.Contracts.V1;
 using GestorONG.Domain.Entities;
+using GestorONG.Infrastructure.Observabilidade;
 using GestorONG.Infrastructure.Seguranca;
 using MassTransit;
 using Microsoft.AspNetCore.Authorization;
@@ -31,6 +32,7 @@ public sealed class DoacoesController(
     IDoacaoRepository doacoes,
     IUnitOfWork unitOfWork,
     IPublishEndpoint publicador,
+    MetricasDeNegocio metricas,
     TimeProvider tempo) : ControllerBase
 {
     [HttpPost]
@@ -64,6 +66,8 @@ public sealed class DoacoesController(
             cancellationToken);
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken);
+
+        metricas.DoacoesRecebidas.Add(1);
 
         return Accepted(new DoacaoAceitaResponse(
             doacao.Id,
