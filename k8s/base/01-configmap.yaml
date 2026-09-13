@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gestorong-config
+  namespace: conexao-solidaria
+data:
+  ASPNETCORE_ENVIRONMENT: "Production"
+  ASPNETCORE_HTTP_PORTS: "8080"
+
+  Mongo__Database: "conexaosolidaria"
+
+  RabbitMq__Host: "rabbitmq"
+  RabbitMq__Porta: "5672"
+  RabbitMq__VirtualHost: "/"
+
+  Jwt__Emissor: "conexao-solidaria"
+  Jwt__Audiencia: "conexao-solidaria"
+  Jwt__ExpiracaoMinutos: "120"
+
+  Seed__GestorNome: "Gestor Esperanca Solidaria"
+  Seed__GestorEmail: "gestor@esperancasolidaria.org"
+  Seed__GestorCpf: "529.982.247-25"
+
+  Logging__LogLevel__Default: "Information"
+  Logging__LogLevel__Microsoft.AspNetCore: "Warning"
