@@ -4,20 +4,115 @@
 
 Plataforma digital da ONG Esperança Solidária — MVP do Hackathon 11NETT.
 
-Uma doação entra pela API, é publicada no RabbitMQ e processada de forma assíncrona
-por um Worker idempotente, que grava o ledger no MongoDB e atualiza o valor
-arrecadado da campanha no PostgreSQL. O painel público reflete o total em segundos.
+Uma doação entra pela API, que **não** atualiza o valor arrecadado. A intenção é
+gravada e publicada como evento na mesma transação; um Worker idempotente consome,
+registra no ledger do MongoDB e incrementa o total da campanha no PostgreSQL com um
+`UPDATE` atômico. O painel público reflete o valor em segundos.
 
 ## Índice
 
+- [Arquitetura](#arquitetura)
+  - [Os três problemas difíceis](#os-três-problemas-difíceis)
+  - [Por que dois bancos](#por-que-dois-bancos)
+  - [Estrutura da solução](#estrutura-da-solução)
 - [Pré-requisitos](#pré-requisitos)
 - [Caminho A — Docker Compose (mais rápido)](#caminho-a--docker-compose-mais-rápido)
 - [Caminho B — Kubernetes (ambiente completo)](#caminho-b--kubernetes-ambiente-completo)
 - [Credenciais](#credenciais)
 - [Fluxo de teste ponta a ponta](#fluxo-de-teste-ponta-a-ponta)
 - [Endpoints](#endpoints)
+- [Observabilidade](#observabilidade)
 - [Rodando os testes](#rodando-os-testes)
 - [Troubleshooting](#troubleshooting)
+- [Documentação](#documentação)
+
+## Arquitetura
+
+```mermaid
+flowchart TB
+    PUB["Público"]
+    DOA["Doador (JWT)"]
+    GES["GestorONG (JWT)"]
+
+    API["GestorONG.API<br/>2 réplicas"]
+    PG[("PostgreSQL<br/>usuarios, campanhas,<br/>doacoes, outbox")]
+    RMQ["RabbitMQ<br/>DoacaoRecebidaEvent"]
+    WRK["GestorONG.Worker<br/>2 réplicas"]
+    MG[("MongoDB<br/>doacoes_processadas")]
+
+    PUB -->|"GET /publico/campanhas"| API
+    DOA -->|"POST /doacoes"| API
+    GES -->|"POST /campanhas"| API
+
+    API -->|"doação + mensagem<br/>na MESMA transação"| PG
+    PG -.->|"outbox entrega"| RMQ
+    RMQ --> WRK
+    WRK -->|"1· insert com índice único<br/>(idempotência)"| MG
+    WRK -->|"2· UPDATE atômico<br/>valor_arrecadado + @valor"| PG
+
+    API -->|"/metrics"| PROM["Prometheus"]
+    WRK -->|"/metrics"| PROM
+    PROM --> GRAF["Grafana"]
+```
+
+A frase que define o projeto inteiro está no edital:
+
+> "Ao receber uma nova doação, a API **NÃO** deve atualizar o valor arrecadado da
+> campanha diretamente no banco de dados."
+
+Ou seja: a API é *write-only* na intenção de doação e responde `202 Accepted`. O
+Worker é o **único dono da escrita** do valor agregado. Todo o resto do desenho
+deriva disso.
+
+### Os três problemas difíceis
+
+Processamento assíncrono de dinheiro tem três modos de falha que não aparecem em
+teste manual. Cada um tem uma mitigação explícita no código:
+
+| Problema | O que aconteceria | Mitigação |
+|---|---|---|
+| **Dupla escrita** | A API grava a doação e publica o evento. Se o publish falha depois do commit, a doação existe e nunca é processada — o valor nunca sobe. | **Transactional Outbox** (MassTransit + EF Core). Doação e mensagem entram na mesma transação; o bus entrega depois. [`ConfiguracaoDeMensageria.cs`](src/GestorONG.Infrastructure/Mensageria/ConfiguracaoDeMensageria.cs) |
+| **Redelivery infla o total** | RabbitMQ é *at-least-once*. Se o Worker processa, incrementa e o ACK se perde, a mensagem volta e soma duas vezes. | Índice único por `IdDoacao` no ledger do Mongo. O insert falhando com `11000` significa "já processei" — descarta sem incrementar. [`DoacaoLedgerRepository.cs`](src/GestorONG.Infrastructure/Persistencia/Mongo/DoacaoLedgerRepository.cs) |
+| **Lost update** | Dois pods do Worker lendo `ValorArrecadado`, somando em memória e gravando: uma das doações desaparece. | `ExecuteUpdateAsync` gera `SET valor_arrecadado = valor_arrecadado + @valor`. Nunca read-modify-write. [`CampanhaRepository.cs`](src/GestorONG.Infrastructure/Persistencia/Repositorios/CampanhaRepository.cs#L29) |
+
+É por isso que o Worker roda com **2 réplicas** no Kubernetes: com uma só, os dois
+últimos problemas nunca são exercitados. A verificação é reprodutível — 30 doações
+simultâneas de R$ 10,00 fecham em exatamente R$ 300,00.
+
+O consumer também tem retry exponencial (3 tentativas, de 1s a 15s) para falhas
+transitórias de banco.
+
+### Por que dois bancos
+
+| Banco | Guarda | Por quê |
+|---|---|---|
+| **PostgreSQL** | Usuários, campanhas, doações e o outbox | Integridade forte. Unicidade de e-mail e CPF, e o incremento atômico do valor arrecadado. ACID não é negociável em dinheiro. |
+| **MongoDB** | Ledger append-only de doações processadas | Escrita alta, sem joins, schema flexível. É lido só para auditoria e reconciliação — e é o que dá idempotência ao Worker. |
+
+O `valor_arrecadado` em `campanhas` é uma coluna materializada, escrita **somente**
+pelo Worker. O ledger do Mongo permite reconciliar esse total a qualquer momento.
+A decisão de não transitar a campanha para `Concluída` automaticamente ao atingir a
+meta está registrada em [ADR 0001](docs/adr/0001-transicao-ao-atingir-a-meta.md).
+
+### Estrutura da solução
+
+```
+src/
+├── GestorONG.API/            # Auth, campanhas, doações, painel público
+├── GestorONG.Worker/         # Consumer do DoacaoRecebidaEvent
+├── GestorONG.Domain/         # Entidades, VOs (Cpf, Email), regras. Zero dependências.
+├── GestorONG.Application/    # Abstrações de repositório, exceções de aplicação
+├── GestorONG.Infrastructure/ # EF Core/Npgsql, Mongo, BCrypt, JWT, MassTransit, métricas
+└── GestorONG.Contracts/      # Eventos compartilhados API ↔ Worker
+tests/
+└── GestorONG.Domain.Tests/   # xUnit, roda no CI sem subir infraestrutura
+k8s/                          # 26 recursos + deploy.ps1 e teardown.ps1
+docker/                       # docker-compose da infraestrutura local
+docs/                         # ADRs e backlog técnico
+```
+
+`Domain` não referencia nada — é o que permite rodar os testes de unidade na esteira
+de CI sem banco, broker ou container.
 
 ## Pré-requisitos
 
@@ -58,9 +153,17 @@ Espere todos ficarem `healthy` — leva cerca de 40 segundos por causa do Rabbit
 docker compose ps
 ```
 
-### 2. Rode a API
+### 2. Compile uma vez
 
-Em outro terminal, a partir da raiz do repositório:
+```bash
+dotnet build GestorONG.slnx
+```
+
+Não é opcional: API e Worker compartilham o projeto `Infrastructure`, e dois
+`dotnet run` simultâneos disputam o mesmo `.dll`
+(ver [Troubleshooting](#error-cs2012-ao-subir-api-e-worker-ao-mesmo-tempo)).
+
+### 3. Rode a API
 
 ```bash
 dotnet run --project src/GestorONG.API
@@ -71,24 +174,25 @@ aparecer `Now listening on: http://localhost:5231`, abra o Swagger:
 
 **http://localhost:5231/swagger**
 
-### 3. Rode o Worker
+### 4. Rode o Worker
 
-Em um terceiro terminal:
+Em outro terminal:
 
 ```bash
 dotnet run --project src/GestorONG.Worker -- --urls http://localhost:5002
 ```
 
 A porta explícita evita conflito com a API. Sem o Worker, as doações são aceitas
-com `202` mas o valor arrecadado nunca sobe — é justamente o que o processamento
+com `202` mas o valor arrecadado nunca sobe — é exatamente o que o processamento
 assíncrono faz.
 
 ### O que o Caminho A não entrega
 
 O dashboard do Grafana **não aparece** aqui. No Compose, o Prometheus está com os
-alvos da API e do Worker comentados em [`docker/prometheus/prometheus.yml`](docker/prometheus/prometheus.yml),
-e o Grafana sobe sem datasource nem dashboard provisionados. A observabilidade
-completa é o Caminho B.
+alvos da API e do Worker comentados em
+[`docker/prometheus/prometheus.yml`](docker/prometheus/prometheus.yml), e o Grafana
+sobe sem datasource nem dashboard provisionados. A observabilidade completa é o
+Caminho B.
 
 ### Encerrando
 
@@ -155,15 +259,11 @@ kubectl port-forward -n conexao-solidaria svc/prometheus 9090:9090
 | Grafana | http://localhost:3000 |
 | Prometheus | http://localhost:9090 |
 
-No Grafana o dashboard **Conexao Solidaria** já está provisionado, com 10 painéis:
-doações recebidas e processadas, lag da fila, redeliveries descartadas pela
-idempotência, requisições HTTP/s, latência p95, CPU e memória por pod, taxa de
-processamento e duração p95 no Worker.
-
 ### Sobre o Secret e a chave JWT
 
-Não existe Secret versionado no repositório. O [`k8s/base/02-secret.example.yaml`](k8s/base/02-secret.example.yaml)
-só tem placeholders, para servir de referência do formato.
+Não existe Secret versionado no repositório. O
+[`k8s/base/02-secret.example.yaml`](k8s/base/02-secret.example.yaml) só tem
+placeholders, para servir de referência do formato.
 
 O `deploy.ps1` cria o Secret real com `kubectl create secret --from-literal` e
 **gera a chave JWT aleatoriamente a cada execução** (48 caracteres). Você não
@@ -200,7 +300,8 @@ Criado automaticamente na primeira subida da API. É o único usuário com perfi
 | Senha | `devlocal123` |
 
 No Caminho B a senha é a que você passou em `-Senha`, e `devlocal123` é o padrão.
-Os valores ficam em [`appsettings.Development.json`](src/GestorONG.API/appsettings.Development.json)
+Os valores ficam em
+[`appsettings.Development.json`](src/GestorONG.API/appsettings.Development.json)
 (Caminho A) e no ConfigMap + Secret (Caminho B).
 
 Novos usuários se cadastram em `POST /api/v1/auth/registrar` e sempre nascem com
@@ -278,9 +379,13 @@ está rodando.
 > Swagger em `/swagger` — mesmo fluxo, sem briga de escaping: faça o login, copie
 > o `accessToken`, clique em **Authorize** e cole o token (sem o prefixo `Bearer`).
 
-Para ver a idempotência e o incremento atômico em ação, repita o passo 5 várias
-vezes em paralelo: o total no painel fecha exatamente com a soma, e o painel
+### Provando a idempotência
+
+Repita o passo 5 várias vezes em paralelo, com o mesmo valor. O total no painel
+fecha exatamente com a soma — nunca a mais, nunca a menos — e o painel
 *Redeliveries descartadas* do Grafana mostra as duplicatas que o consumer barrou.
+É a demonstração prática das mitigações da
+[seção de arquitetura](#os-três-problemas-difíceis).
 
 ## Endpoints
 
@@ -298,7 +403,28 @@ vezes em paralelo: o total no painel fecha exatamente com a soma, e o painel
 | `GET` | `/metrics` | público |
 
 `/health/live` não consulta dependência alguma — é o que a liveness probe usa.
-`/health/ready` verifica PostgreSQL, MongoDB e RabbitMQ.
+`/health/ready` verifica PostgreSQL, MongoDB e RabbitMQ, e é o que tira o pod do
+balanceamento sem matá-lo.
+
+## Observabilidade
+
+Além das métricas de runtime e de GC, a aplicação expõe cinco métricas de negócio
+em `/metrics`:
+
+| Métrica | O que mede |
+|---|---|
+| `doacoes_recebidas_total` | Intenções aceitas pela API |
+| `doacoes_processadas_total` | Doações efetivamente somadas pelo Worker |
+| `doacoes_duplicadas_descartadas_total` | Redeliveries barradas pela idempotência |
+| `doacoes_valor_total` | Soma dos valores doados, em BRL |
+| `doacao_processamento_duracao_seconds` | Histograma da duração no Worker |
+
+A diferença entre `recebidas` e `processadas` é o lag da fila em tempo real.
+
+No Caminho B o dashboard **Conexao Solidaria** já vem provisionado no Grafana, com
+10 painéis: doações recebidas e processadas, lag da fila, redeliveries descartadas,
+requisições HTTP/s, latência p95, CPU e memória por pod, taxa de processamento e
+duração p95 no Worker. CPU e memória vêm do cAdvisor via kubelet.
 
 ## Rodando os testes
 
@@ -420,8 +546,10 @@ cAdvisor — se ele estiver em `403`, falta a permissão `nodes/proxy` no Cluste
 
 ## Documentação
 
-- [Análise técnica e backlog](docs/BACKLOG.md) — arquitetura, riscos mapeados e as 79 tarefas
+- [Análise técnica e backlog](docs/BACKLOG.md) — riscos mapeados, decisões travadas e as 79 tarefas
 - [ADRs](docs/adr) — decisões arquiteturais registradas
 - [Issues](https://github.com/carolbabiasi/conexao-solidaria/issues) organizadas por épico e fase
 
-O diagrama de arquitetura é a issue [DOC-02](https://github.com/carolbabiasi/conexao-solidaria/issues/68) e ainda não foi produzido.
+O diagrama no topo cobre o fluxo da doação. O diagrama formal de arquitetura para o
+relatório de entrega é a issue
+[DOC-02](https://github.com/carolbabiasi/conexao-solidaria/issues/68).
