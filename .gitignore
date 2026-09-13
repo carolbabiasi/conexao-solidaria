@@ -406,3 +406,6 @@ FodyWeavers.xsd
 # Variaveis de ambiente locais (docker compose) - contem senhas
 .env
 docker/.env
+
+# Secret real do Kubernetes. Apenas o 02-secret.example.yaml vai para o Git.
+k8s/base/02-secret.yaml
