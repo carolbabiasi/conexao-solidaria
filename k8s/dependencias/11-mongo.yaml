@@ -43,20 +43,24 @@ spec:
           readinessProbe:
             exec:
               command: ["mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
-            initialDelaySeconds: 15
-            periodSeconds: 10
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 15
+            failureThreshold: 5
           livenessProbe:
-            exec:
-              command: ["mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+            tcpSocket:
+              port: 27017
             initialDelaySeconds: 40
             periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
           resources:
             requests:
-              cpu: 100m
-              memory: 256Mi
+              cpu: 200m
+              memory: 384Mi
             limits:
-              cpu: 500m
-              memory: 512Mi
+              cpu: 1000m
+              memory: 768Mi
       volumes:
         - name: dados
           persistentVolumeClaim:
