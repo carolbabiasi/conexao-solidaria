@@ -28,32 +28,10 @@ registra no ledger do MongoDB e incrementa o total da campanha no PostgreSQL com
 
 ## Arquitetura
 
-```mermaid
-flowchart TB
-    PUB["Público"]
-    DOA["Doador (JWT)"]
-    GES["GestorONG (JWT)"]
+![Arquitetura da Conexão Solidária: os clientes chamam a API, que grava a doação e a mensagem na mesma transação do PostgreSQL; o outbox entrega o evento ao RabbitMQ, o Worker consome, registra no ledger do MongoDB com índice único e incrementa o valor arrecadado com UPDATE atômico; Prometheus e Grafana coletam as métricas](docs/diagramas/arquitetura.png)
 
-    API["GestorONG.API<br/>2 réplicas"]
-    PG[("PostgreSQL<br/>usuarios, campanhas,<br/>doacoes, outbox")]
-    RMQ["RabbitMQ<br/>DoacaoRecebidaEvent"]
-    WRK["GestorONG.Worker<br/>2 réplicas"]
-    MG[("MongoDB<br/>doacoes_processadas")]
-
-    PUB -->|"GET /publico/campanhas"| API
-    DOA -->|"POST /doacoes"| API
-    GES -->|"POST /campanhas"| API
-
-    API -->|"doação + mensagem<br/>na MESMA transação"| PG
-    PG -.->|"outbox entrega"| RMQ
-    RMQ --> WRK
-    WRK -->|"1· insert com índice único<br/>(idempotência)"| MG
-    WRK -->|"2· UPDATE atômico<br/>valor_arrecadado + @valor"| PG
-
-    API -->|"/metrics"| PROM["Prometheus"]
-    WRK -->|"/metrics"| PROM
-    PROM --> GRAF["Grafana"]
-```
+> Fonte versionada em [`docs/diagramas/arquitetura.svg`](docs/diagramas/arquitetura.svg).
+> Editou o SVG? Reexporte o PNG com `.\scripts\exportar-diagramas.ps1`.
 
 A frase que define o projeto inteiro está no edital:
 
@@ -546,10 +524,7 @@ cAdvisor — se ele estiver em `403`, falta a permissão `nodes/proxy` no Cluste
 
 ## Documentação
 
+- [Diagrama de arquitetura](docs/diagramas/arquitetura.svg) — fonte SVG; o PNG ao lado é o que vai para o relatório e os slides
 - [Análise técnica e backlog](docs/BACKLOG.md) — riscos mapeados, decisões travadas e as 79 tarefas
 - [ADRs](docs/adr) — decisões arquiteturais registradas
 - [Issues](https://github.com/carolbabiasi/conexao-solidaria/issues) organizadas por épico e fase
-
-O diagrama no topo cobre o fluxo da doação. O diagrama formal de arquitetura para o
-relatório de entrega é a issue
-[DOC-02](https://github.com/carolbabiasi/conexao-solidaria/issues/68).
