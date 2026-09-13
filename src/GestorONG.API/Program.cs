@@ -1,3 +1,4 @@
+using GestorONG.API.Configuracao;
 using GestorONG.API.Middleware;
 using GestorONG.Infrastructure;
 using GestorONG.Infrastructure.Mensageria;
@@ -8,7 +9,7 @@ using GestorONG.Infrastructure.Seguranca;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(opcoes => opcoes.AddDocumentTransformer<TransformadorDeSeguranca>());
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<TratadorGlobalDeExcecoes>();
 
@@ -23,15 +24,20 @@ await app.Services.MigrarESemearAsync();
 
 app.UseExceptionHandler();
 
-if (app.Environment.IsDevelopment())
+app.MapOpenApi();
+app.UseSwaggerUI(opcoes =>
 {
-    app.MapOpenApi();
-}
+    opcoes.SwaggerEndpoint("/openapi/v1.json", "Conexão Solidária v1");
+    opcoes.RoutePrefix = "swagger";
+    opcoes.DocumentTitle = "Conexão Solidária — API";
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 app.MapearObservabilidade();
+
+app.MapGet("/", () => Results.Redirect("/swagger")).AllowAnonymous().ExcludeFromDescription();
 
 app.Run();

@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-data
+  namespace: conexao-solidaria
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+  namespace: conexao-solidaria
+  labels:
+    app: mongo
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:8.0
+          ports:
+            - containerPort: 27017
+              name: mongo
+          envFrom:
+            - secretRef:
+                name: gestorong-secret
+          volumeMounts:
+            - name: dados
+              mountPath: /data/db
+          readinessProbe:
+            exec:
+              command: ["mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 15
+            failureThreshold: 5
+          livenessProbe:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 40
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 200m
+              memory: 384Mi
+            limits:
+              cpu: 1000m
+              memory: 768Mi
+      volumes:
+        - name: dados
+          persistentVolumeClaim:
+            claimName: mongo-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+  namespace: conexao-solidaria
+spec:
+  type: ClusterIP
+  selector:
+    app: mongo
+  ports:
+    - port: 27017
+      targetPort: 27017

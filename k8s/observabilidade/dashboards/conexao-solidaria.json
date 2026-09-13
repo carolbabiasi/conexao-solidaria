@@ -1,0 +1,136 @@
+{
+  "title": "Conexao Solidaria",
+  "uid": "conexao-solidaria",
+  "tags": ["conexao-solidaria", "hackathon"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "5s",
+  "time": { "from": "now-15m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Doacoes recebidas (API)",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "unit": "short" }, "overrides": [] },
+      "targets": [
+        { "expr": "sum(doacoes_recebidas_total)", "legendFormat": "recebidas", "refId": "A" }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Doacoes processadas (Worker)",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "unit": "short" }, "overrides": [] },
+      "targets": [
+        { "expr": "sum(doacoes_processadas_total)", "legendFormat": "processadas", "refId": "A" }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Lag da fila (recebidas - processadas)",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "unit": "short" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "sum(doacoes_recebidas_total) - sum(doacoes_processadas_total)",
+          "legendFormat": "pendentes",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Redeliveries descartadas (idempotencia)",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "unit": "short" }, "overrides": [] },
+      "targets": [
+        { "expr": "sum(doacoes_duplicadas_descartadas_total)", "legendFormat": "descartadas", "refId": "A" }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Requisicoes HTTP por segundo",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "lineWidth": 2, "fillOpacity": 10 } }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "sum by (http_route) (rate(http_server_request_duration_seconds_count[1m]))",
+          "legendFormat": "{{http_route}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Latencia HTTP p95",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2, "fillOpacity": 10 } }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, http_route) (rate(http_server_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{http_route}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "CPU por pod",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "custom": { "lineWidth": 2, "fillOpacity": 10 } }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"conexao-solidaria\",container!=\"\",container!=\"POD\"}[2m]))",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Memoria por pod",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "lineWidth": 2, "fillOpacity": 10 } }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"conexao-solidaria\",container!=\"\",container!=\"POD\"})",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Taxa de doacoes processadas",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 20 } }, "overrides": [] },
+      "targets": [
+        { "expr": "sum(rate(doacoes_recebidas_total[1m]))", "legendFormat": "recebidas/s", "refId": "A" },
+        { "expr": "sum(rate(doacoes_processadas_total[1m]))", "legendFormat": "processadas/s", "refId": "B" }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Duracao do processamento no Worker (p95)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2, "fillOpacity": 10 } }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(doacao_processamento_duracao_seconds_bucket[5m])))",
+          "legendFormat": "p95",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}
