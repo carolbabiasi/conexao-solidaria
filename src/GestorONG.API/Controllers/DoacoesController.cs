@@ -15,10 +15,10 @@ namespace GestorONG.API.Controllers;
 public sealed record CriarDoacaoRequest
 {
     [Required]
-    public Guid IdCampanha { get; init; }
+    public Guid? IdCampanha { get; init; }
 
     [Required]
-    public decimal ValorDoacao { get; init; }
+    public decimal? ValorDoacao { get; init; }
 }
 
 public sealed record DoacaoAceitaResponse(Guid IdDoacao, string Status, string Mensagem);
@@ -57,10 +57,10 @@ public sealed class DoacoesController(
     {
         var idDoador = ObterIdDoDoadorAutenticado();
 
-        var campanha = await campanhas.ObterPorIdAsync(requisicao.IdCampanha, cancellationToken)
+        var campanha = await campanhas.ObterPorIdAsync(requisicao.IdCampanha!.Value, cancellationToken)
             ?? throw new NaoEncontradoException("Campanha não encontrada.");
 
-        var doacao = Doacao.Criar(campanha, idDoador, requisicao.ValorDoacao, tempo);
+        var doacao = Doacao.Criar(campanha, idDoador, requisicao.ValorDoacao!.Value, tempo);
 
         await doacoes.AdicionarAsync(doacao, cancellationToken);
 

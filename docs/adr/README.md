@@ -10,6 +10,7 @@ uma responde a uma pergunta que a banca provavelmente vai fazer.
 | [0003](0003-idempotencia-do-consumer.md) | Idempotência pelo índice único do ledger | *"E se a mensagem chegar duas vezes?"* |
 | [0004](0004-ownership-do-valor-arrecadado.md) | Só o Worker escreve o valor arrecadado | *"Por que coluna materializada e não `SUM()`?"* |
 | [0005](0005-migration-no-startup.md) | Migrations aplicadas na partida da API | *"E se duas réplicas subirem juntas?"* |
+| [0006](0006-campos-imutaveis-apos-doacao.md) | Meta e data de início congelam após a primeira doação | *"O gestor pode editar uma campanha que já recebeu dinheiro?"* |
 
 Formato: contexto, decisão, justificativa, consequências e alternativas
 descartadas. As consequências incluem o que a decisão **custa** — um ADR que só
