@@ -1,3 +1,4 @@
+using GestorONG.Application.Excecoes;
 using GestorONG.Application.Abstracoes;
 using GestorONG.Contracts.V1;
 using GestorONG.Infrastructure.Observabilidade;
@@ -45,11 +46,12 @@ public sealed class DoacaoRecebidaConsumer(
         if (linhasAfetadas == 0)
         {
             logger.LogError(
-                "Campanha {IdCampanha} nao encontrada para a doacao {IdDoacao}.",
+                "Campanha {IdCampanha} nao encontrada para a doacao {IdDoacao}. " +
+                "Falha permanente: a mensagem vai direto para a fila de erro, sem retry.",
                 evento.IdCampanha,
                 evento.IdDoacao);
 
-            throw new InvalidOperationException(
+            throw new FalhaPermanenteException(
                 $"Campanha {evento.IdCampanha} não encontrada.");
         }
 

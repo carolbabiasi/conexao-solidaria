@@ -1,3 +1,4 @@
+using GestorONG.Application.Excecoes;
 using GestorONG.Infrastructure.Persistencia;
 using MassTransit;
 using Microsoft.Extensions.Configuration;
@@ -45,11 +46,19 @@ public static class ConfiguracaoDeMensageria
                 });
 
                 barramento.UseMessageRetry(retry =>
+                {
+                    // Falha permanente nao entra no retry. Uma campanha que nao
+                    // existe agora nao vai passar a existir em quinze segundos:
+                    // insistir so atrasa o descarte e segura a fila atras dela.
+                    // Ignorada aqui, a mensagem vai direto para <fila>_error.
+                    retry.Ignore<FalhaPermanenteException>();
+
                     retry.Exponential(
                         retryLimit: 3,
                         minInterval: TimeSpan.FromSeconds(1),
                         maxInterval: TimeSpan.FromSeconds(15),
-                        intervalDelta: TimeSpan.FromSeconds(2)));
+                        intervalDelta: TimeSpan.FromSeconds(2));
+                });
 
                 barramento.ConfigureEndpoints(contexto);
             });
