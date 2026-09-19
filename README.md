@@ -198,7 +198,13 @@ Ou habilite o Kubernetes no Docker Desktop (Settings → Kubernetes → Enable).
 
 ### 2. Suba tudo com um comando
 
+```bash
+# Linux e macOS
+./k8s/deploy.sh
+```
+
 ```powershell
+# Windows
 .\k8s\deploy.ps1
 ```
 
@@ -212,9 +218,14 @@ final ele imprime os 9 pods e os comandos de acesso.
 
 Opções:
 
+```bash
+./k8s/deploy.sh --pular-build            # reusa as imagens já no cluster
+./k8s/deploy.sh --senha "outra-senha"    # troca a senha de toda a stack
+```
+
 ```powershell
-.\k8s\deploy.ps1 -PularBuild           # reusa as imagens já no cluster
-.\k8s\deploy.ps1 -Senha "outra-senha"  # troca a senha de toda a stack
+.\k8s\deploy.ps1 -PularBuild             # equivalente no Windows
+.\k8s\deploy.ps1 -Senha "outra-senha"
 ```
 
 ### 3. Abra as interfaces
@@ -258,9 +269,14 @@ kubectl apply -f k8s/base/02-secret.yaml
 
 ### Encerrando
 
+```bash
+./k8s/teardown.sh                 # remove o namespace inteiro, incluindo os dados
+./k8s/teardown.sh --manter-dados  # remove os workloads, preserva os PVCs
+```
+
 ```powershell
-.\k8s\teardown.ps1                # remove o namespace inteiro, incluindo os dados
-.\k8s\teardown.ps1 -ManterDados   # remove os workloads, preserva os PVCs
+.\k8s\teardown.ps1                # equivalente no Windows
+.\k8s\teardown.ps1 -ManterDados
 ```
 
 ## Credenciais
