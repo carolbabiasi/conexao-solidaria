@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 namespace GestorONG.Infrastructure.Observabilidade;
 
@@ -18,6 +19,9 @@ public static class ConfiguracaoDeObservabilidade
 
         servicos.AddOpenTelemetry()
             .ConfigureResource(recurso => recurso.AddService(nomeDoServico))
+            .WithTracing(tracing => tracing
+                .AddAspNetCoreInstrumentation()
+                .AddSource("MassTransit"))
             .WithMetrics(metricas => metricas
                 .AddAspNetCoreInstrumentation()
                 .AddRuntimeInstrumentation()
