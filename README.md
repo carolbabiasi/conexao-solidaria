@@ -528,4 +528,5 @@ cAdvisor — se ele estiver em `403`, falta a permissão `nodes/proxy` no Cluste
 - [Por que PostgreSQL e MongoDB](docs/escolha-dos-bancos.md) — justificativa dos dois bancos ligada ao código; [PDF](docs/escolha-dos-bancos.pdf) para a entrega
 - [Análise técnica e backlog](docs/BACKLOG.md) — riscos mapeados, decisões travadas e as 79 tarefas
 - [ADRs](docs/adr) — decisões arquiteturais registradas
+- [Coleção Postman](docs/postman) — fluxo da demo encadeado, com os negativos que provam as regras
 - [Issues](https://github.com/carolbabiasi/conexao-solidaria/issues) organizadas por épico e fase
