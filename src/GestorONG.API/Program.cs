@@ -9,7 +9,11 @@ using GestorONG.Infrastructure.Seguranca;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddOpenApi(opcoes => opcoes.AddDocumentTransformer<TransformadorDeSeguranca>());
+builder.Services.AddOpenApi(opcoes =>
+{
+    opcoes.AddDocumentTransformer<TransformadorDeSeguranca>();
+    opcoes.AddSchemaTransformer<TransformadorDeExemplos>();
+});
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<TratadorGlobalDeExcecoes>();
 

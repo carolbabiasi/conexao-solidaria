@@ -18,6 +18,10 @@ public sealed record CampanhaPublicaResponse(
 public sealed class PublicoController(ICampanhaRepository campanhas) : ControllerBase
 {
     [HttpGet("campanhas")]
+    [EndpointSummary("Painel público das campanhas ativas")]
+    [EndpointDescription(
+        "Sem autenticação. O valorArrecadado é a coluna materializada que só o " +
+        "Worker escreve. Chame este endpoint depois de doar para ver o total subir.")]
     [ProducesResponseType<IReadOnlyList<CampanhaPublicaResponse>>(StatusCodes.Status200OK)]
     [ResponseCache(Duration = 5)]
     public async Task<ActionResult<IReadOnlyList<CampanhaPublicaResponse>>> ListarAtivas(
