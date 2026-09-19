@@ -46,8 +46,6 @@ for cmd in kubectl docker; do
 done
 ok "kubectl e docker encontrados"
 
-# A primeira conexao apos um restart do Docker costuma falhar enquanto o
-# tunel de porta do kind se restabelece, entao vale uma sequencia de tentativas.
 conectou=0
 for _ in 1 2 3 4 5; do
     if kubectl get nodes > /dev/null 2>&1; then conectou=1; break; fi
@@ -96,7 +94,6 @@ passo "ConfigMap e Secret"
 kubectl apply -f "$raiz/k8s/base/01-configmap.yaml" > /dev/null 2>&1
 ok "ConfigMap"
 
-# Chave JWT aleatoria a cada execucao: nenhum segredo real fica versionado.
 chave_jwt="$(LC_ALL=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 48)"
 
 kubectl create secret generic gestorong-secret \

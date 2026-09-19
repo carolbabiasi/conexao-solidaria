@@ -1,7 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 
-# Shell scripts precisam de LF mesmo sendo editados no Windows. Com CRLF o
-# shebang vira "#!/usr/bin/env bash\r" e o Linux responde
-# "bad interpreter: No such file or directory".
+# Shell scripts precisam de LF: com CRLF o shebang quebra no Linux.
 *.sh text eol=lf
