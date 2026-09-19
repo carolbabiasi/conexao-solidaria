@@ -21,6 +21,11 @@ public sealed class AuthController(
 {
     [HttpPost("registrar")]
     [AllowAnonymous]
+    [EndpointSummary("Cadastra um doador")]
+    [EndpointDescription(
+        "Cadastro público. Todo usuário criado aqui nasce com o perfil Doador — " +
+        "não há endpoint para criar um GestorONG. O CPF passa por validação de " +
+        "dígito verificador e é normalizado para dígitos antes de gravar.")]
     [ProducesResponseType<UsuarioResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -58,7 +63,14 @@ public sealed class AuthController(
 
     [HttpPost("login")]
     [AllowAnonymous]
+    [EndpointSummary("Autentica e devolve o token")]
+    [EndpointDescription(
+        "Copie o accessToken da resposta, clique em Authorize no topo desta página " +
+        "e cole o token sem o prefixo Bearer. É o primeiro passo do fluxo de demo. " +
+        "E-mail inexistente e senha errada devolvem o mesmo 401, de propósito: " +
+        "respostas diferentes permitiriam descobrir quais e-mails estão cadastrados.")]
     [ProducesResponseType<LoginResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<LoginResponse>> Login(
         LoginRequest requisicao,

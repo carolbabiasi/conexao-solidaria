@@ -36,6 +36,16 @@ public sealed class DoacoesController(
     TimeProvider tempo) : ControllerBase
 {
     [HttpPost]
+    [EndpointSummary("Registra a intenção de doação")]
+    [EndpointDescription(
+        "Responde 202 Accepted, não 201: a API grava a intenção e publica o evento " +
+        "na mesma transação, mas NÃO atualiza o valor arrecadado da campanha. " +
+        "Quem soma é o Worker, ao consumir a fila. Por isso o painel público leva " +
+        "alguns segundos para refletir o valor — e por isso doar duas vezes a mesma " +
+        "mensagem não infla o total: o ledger tem índice único por doação. " +
+        "Troque o idCampanha do exemplo pelo id devolvido ao criar a campanha: " +
+        "o valor de exemplo é fixo e não existe num banco recém-criado, onde " +
+        "devolveria 404. Exige perfil Doador — um token de GestorONG recebe 403.")]
     [ProducesResponseType<DoacaoAceitaResponse>(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
