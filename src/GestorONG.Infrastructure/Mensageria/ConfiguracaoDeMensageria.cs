@@ -1,3 +1,4 @@
+using GestorONG.Application.Excecoes;
 using GestorONG.Infrastructure.Persistencia;
 using MassTransit;
 using Microsoft.Extensions.Configuration;
@@ -45,11 +46,15 @@ public static class ConfiguracaoDeMensageria
                 });
 
                 barramento.UseMessageRetry(retry =>
+                {
+                    retry.Ignore<FalhaPermanenteException>();
+
                     retry.Exponential(
                         retryLimit: 3,
                         minInterval: TimeSpan.FromSeconds(1),
                         maxInterval: TimeSpan.FromSeconds(15),
-                        intervalDelta: TimeSpan.FromSeconds(2)));
+                        intervalDelta: TimeSpan.FromSeconds(2));
+                });
 
                 barramento.ConfigureEndpoints(contexto);
             });
