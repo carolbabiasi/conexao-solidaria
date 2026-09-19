@@ -27,7 +27,7 @@ o que permite o `Run collection` provar o resultado **assíncrono** sem ninguém
 apertar nada: o `202` volta na hora, mas o total só sobe quando o Worker
 processa.
 
-**Pasta 2 — Regras de negócio.** Cinco requisições que devem falhar:
+**Pasta 2 — Regras de negócio.** Requisições que devem falhar:
 
 | Requisição | Esperado | Regra demonstrada |
 |---|---|---|
@@ -35,6 +35,11 @@ processa.
 | Doador criando campanha | `403` | RBAC: só GestorONG cria |
 | Campanha com data no passado | `400` | Validação de domínio |
 | Doação em campanha cancelada | `400` | Campanha cancelada não aceita doações |
+| Reabrir campanha cancelada | `409` | Concluída e cancelada são estados finais |
+
+**Pasta 3 — Gestão da campanha.** Edição (`PUT`) e listagem paginada, a visão
+que o gestor tem e o painel público não dá. Inclui o `pageSize` absurdo sendo
+limitado ao teto em vez de recusado.
 
 ## Decisões que valem explicar
 
@@ -48,8 +53,9 @@ coleção passaria a falhar sozinha com o tempo.
 **O `status` vai numérico** (1 Ativa, 2 Concluída, 3 Cancelada). Não há
 `JsonStringEnumConverter` configurado, então `"Ativa"` quebraria com `400`.
 
-**A campanha cancelada nasce cancelada.** Ainda não existe endpoint para mudar
-status — é a [CAMP-03](https://github.com/carolbabiasi/conexao-solidaria/issues/30).
+**A campanha cancelada é cancelada via `PATCH`.** A pasta 2 cancela a própria
+campanha da pasta 1, depois de a doação já ter sido processada — e a
+requisição seguinte confirma que ela sumiu do painel público.
 
 ## Se o login do doador falhar
 

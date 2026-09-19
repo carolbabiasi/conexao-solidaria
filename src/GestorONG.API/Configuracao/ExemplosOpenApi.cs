@@ -78,6 +78,23 @@ internal sealed class TransformadorDeExemplos : IOpenApiSchemaTransformer
             ["status"] = "Ativa"
         },
 
+        [typeof(AtualizarCampanhaRequest)] = () => new JsonObject
+        {
+            ["titulo"] = "Cestas basicas de inverno - prorrogada",
+            ["descricao"] = "Arrecadacao para 200 familias. Prazo estendido.",
+            ["dataInicio"] = "2026-01-01T00:00:00+00:00",
+            ["dataFim"] = "2027-03-31T23:59:59+00:00",
+            // Depois da primeira doacao, meta e dataInicio precisam vir
+            // iguais aos atuais: mudar qualquer um dos dois resulta em 400.
+            ["metaFinanceira"] = 10000.00m
+        },
+
+        [typeof(AlterarStatusRequest)] = () => new JsonObject
+        {
+            // 2 Concluida, 3 Cancelada. So a partir de Ativa.
+            ["status"] = 3
+        },
+
         [typeof(CriarDoacaoRequest)] = () => new JsonObject
         {
             ["idCampanha"] = IdCampanhaExemplo,

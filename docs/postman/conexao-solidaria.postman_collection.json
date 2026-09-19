@@ -346,16 +346,16 @@
           }
         },
         {
-          "name": "Criar campanha cancelada (preparo)",
+          "name": "Cancelar a campanha",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
                   "",
-                  "pm.test('nasce cancelada', () => pm.expect(pm.response.json().status).to.eql('Cancelada'));",
+                  "pm.test('ficou cancelada', () => pm.expect(pm.response.json().status).to.eql('Cancelada'));",
                   "",
                   "pm.collectionVariables.set('idCampanhaCancelada', pm.response.json().id);"
                 ]
@@ -363,17 +363,77 @@
             }
           ],
           "request": {
-            "method": "POST",
+            "method": "PATCH",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Authorization", "value": "Bearer {{tokenGestor}}" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Campanha cancelada\",\n  \"descricao\": \"Existe para provar que doacao em campanha cancelada e recusada.\",\n  \"dataInicio\": \"{{dataInicio}}\",\n  \"dataFim\": \"{{dataFim}}\",\n  \"metaFinanceira\": 1000.00,\n  \"status\": 3\n}"
+              "raw": "{\n  \"status\": 3\n}"
             },
-            "url": "{{baseUrl}}/api/v1/campanhas",
-            "description": "Preparo do negativo seguinte. Nasce já cancelada porque ainda não existe endpoint para mudar status (CAMP-03, #30)."
+            "url": "{{baseUrl}}/api/v1/campanhas/{{idCampanha}}/status",
+            "description": "Cancela a campanha da pasta 1, que a essa altura já teve a doação processada. Prepara os dois negativos seguintes."
+          }
+        },
+        {
+          "name": "Campanha cancelada some do painel público",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "",
+                  "// A campanha aparecia no painel na pasta 1, com o valor da doacao.",
+                  "// Depois do cancelamento ela sai da listagem publica.",
+                  "const idCampanha = pm.collectionVariables.get('idCampanha');",
+                  "const ainda = pm.response.json().find(c => c.id === idCampanha);",
+                  "",
+                  "pm.test('sumiu da listagem publica', () => pm.expect(ainda).to.be.undefined);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/publico/campanhas",
+            "description": "O painel público só lista campanhas ativas. É o critério de aceite da CAMP-03: cancelar faz a campanha sumir da vitrine na hora."
+          }
+        },
+        {
+          "name": "Reabrir campanha cancelada devolve 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// 409 e nao 400: a requisicao esta bem formada e o status existe.",
+                  "// O que impede e o estado atual do recurso.",
+                  "pm.test('409 Conflict', () => pm.response.to.have.status(409));",
+                  "",
+                  "pm.test('explica a transicao recusada', () => {",
+                  "    pm.expect(pm.response.json().detail).to.include('Cancelada');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenGestor}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 1\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/campanhas/{{idCampanha}}/status",
+            "description": "Cancelada e concluída são estados finais. Reabrir traria de volta uma campanha que já recusou doações."
           }
         },
         {
@@ -407,6 +467,155 @@
             },
             "url": "{{baseUrl}}/api/v1/doacoes",
             "description": "A recusa vem do domínio, antes de qualquer mensagem ser publicada: campanha cancelada não aceita doações."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 · Gestão da campanha",
+      "description": "Edição e listagem, a visão que o gestor tem e o painel público não dá.",
+      "item": [
+        {
+          "name": "Editar uma campanha",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Cria uma campanha propria para editar. A da pasta 1 ja foi",
+                  "// cancelada pela pasta 2, e campanha cancelada nao aceita edicao.",
+                  "const agora = new Date();",
+                  "const fim = new Date(agora.getTime() + 90 * 24 * 60 * 60 * 1000);",
+                  "const corpo = {",
+                  "    titulo: 'Campanha para editar',",
+                  "    descricao: 'Criada pelo pre-request para demonstrar a edicao.',",
+                  "    dataInicio: agora.toISOString(),",
+                  "    dataFim: fim.toISOString(),",
+                  "    metaFinanceira: 3000.00,",
+                  "    status: 1",
+                  "};",
+                  "",
+                  "pm.sendRequest({",
+                  "    url: pm.environment.get('baseUrl') + '/api/v1/campanhas',",
+                  "    method: 'POST',",
+                  "    header: {",
+                  "        'Content-Type': 'application/json',",
+                  "        'Authorization': 'Bearer ' + pm.collectionVariables.get('tokenGestor')",
+                  "    },",
+                  "    body: { mode: 'raw', raw: JSON.stringify(corpo) }",
+                  "}, (erro, resposta) => {",
+                  "    if (!erro) { pm.collectionVariables.set('idCampanhaEditavel', resposta.json().id); }",
+                  "    pm.collectionVariables.set('dataInicioEditavel', corpo.dataInicio);",
+                  "    pm.collectionVariables.set('dataFimProrrogada', new Date(agora.getTime() + 180 * 24 * 60 * 60 * 1000).toISOString());",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "",
+                  "const corpo = pm.response.json();",
+                  "",
+                  "pm.test('titulo e prazo mudaram', () => {",
+                  "    pm.expect(corpo.titulo).to.eql('Campanha para editar - prorrogada');",
+                  "});",
+                  "",
+                  "// Sem doacao ainda, a meta tambem pode mudar. Depois da primeira",
+                  "// doacao ela congela, junto com a data de inicio - ver ADR 0006.",
+                  "pm.test('meta pode mudar enquanto nao houve doacao', () => {",
+                  "    pm.expect(Number(corpo.metaFinanceira)).to.eql(7500);",
+                  "});",
+                  "",
+                  "pm.test('valor arrecadado intocado', () => {",
+                  "    pm.expect(Number(corpo.valorArrecadado)).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenGestor}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Campanha para editar - prorrogada\",\n  \"descricao\": \"Texto revisado e prazo estendido.\",\n  \"dataInicio\": \"{{dataInicioEditavel}}\",\n  \"dataFim\": \"{{dataFimProrrogada}}\",\n  \"metaFinanceira\": 7500.00\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/campanhas/{{idCampanhaEditavel}}",
+            "description": "Não há campo de valor arrecadado no corpo, de propósito: não existe caminho pela API que altere esse número."
+          }
+        },
+        {
+          "name": "Listar campanhas paginado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "",
+                  "const pagina = pm.response.json();",
+                  "",
+                  "pm.test('envelope traz totalItems e totalPages', () => {",
+                  "    pm.expect(pagina).to.have.property('totalItems');",
+                  "    pm.expect(pagina).to.have.property('totalPages');",
+                  "});",
+                  "",
+                  "pm.test('nao devolve mais itens que o tamanho pedido', () => {",
+                  "    pm.expect(pagina.itens.length).to.be.at.most(pagina.tamanhoPagina);",
+                  "});",
+                  "",
+                  "// O gestor ve todos os status; o painel publico so os ativos.",
+                  "pm.test('inclui campanhas nao ativas', () => {",
+                  "    pm.expect(pagina.totalItems).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{tokenGestor}}" }
+            ],
+            "url": "{{baseUrl}}/api/v1/campanhas?page=1&pageSize=5",
+            "description": "Visão do gestor, com campanhas de todos os status. Troque pageSize por um número absurdo: a resposta vem limitada a 100, não recusada."
+          }
+        },
+        {
+          "name": "pageSize absurdo é limitado ao teto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "",
+                  "// Paginacao e detalhe de transporte: derrubar a listagem por causa",
+                  "// de um pageSize distraido nao ajuda ninguem. O valor e corrigido.",
+                  "pm.test('tamanho da pagina foi reduzido para 100', () => {",
+                  "    pm.expect(pm.response.json().tamanhoPagina).to.eql(100);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{tokenGestor}}" }
+            ],
+            "url": "{{baseUrl}}/api/v1/campanhas?page=1&pageSize=99999",
+            "description": "Critério de aceite da CAMP-04: pageSize absurdo é limitado, não aceito."
           }
         }
       ]

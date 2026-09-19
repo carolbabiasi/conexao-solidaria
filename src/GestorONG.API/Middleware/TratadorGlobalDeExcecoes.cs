@@ -58,6 +58,15 @@ internal sealed class TratadorGlobalDeExcecoes(
                 return problema;
             }
 
+            case TransicaoDeStatusInvalidaException transicao:
+                return new ProblemDetails
+                {
+                    Status = StatusCodes.Status409Conflict,
+                    Title = "Transição de status inválida.",
+                    Detail = transicao.Message,
+                    Instance = contexto.Request.Path
+                };
+
             case ConflitoException conflito:
                 return new ProblemDetails
                 {

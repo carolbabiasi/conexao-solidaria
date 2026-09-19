@@ -48,7 +48,7 @@ Processamento assíncrono de dinheiro tem três modos de falha que não aparecem
 teste manual. Cada um tem uma mitigação explícita no código:
 
 | Problema | O que aconteceria | Mitigação |
-|---|---|---|
+|---|---|---|---|
 | **Dupla escrita** | A API grava a doação e publica o evento. Se o publish falha depois do commit, a doação existe e nunca é processada — o valor nunca sobe. | **Transactional Outbox** (MassTransit + EF Core). Doação e mensagem entram na mesma transação; o bus entrega depois. [`ConfiguracaoDeMensageria.cs`](src/GestorONG.Infrastructure/Mensageria/ConfiguracaoDeMensageria.cs) |
 | **Redelivery infla o total** | RabbitMQ é *at-least-once*. Se o Worker processa, incrementa e o ACK se perde, a mensagem volta e soma duas vezes. | Índice único por `IdDoacao` no ledger do Mongo. O insert falhando com `11000` significa "já processei" — descarta sem incrementar. [`DoacaoLedgerRepository.cs`](src/GestorONG.Infrastructure/Persistencia/Mongo/DoacaoLedgerRepository.cs) |
 | **Lost update** | Dois pods do Worker lendo `ValorArrecadado`, somando em memória e gravando: uma das doações desaparece. | `ExecuteUpdateAsync` gera `SET valor_arrecadado = valor_arrecadado + @valor`. Nunca read-modify-write. [`CampanhaRepository.cs`](src/GestorONG.Infrastructure/Persistencia/Repositorios/CampanhaRepository.cs#L29) |
@@ -367,18 +367,20 @@ fecha exatamente com a soma — nunca a mais, nunca a menos — e o painel
 
 ## Endpoints
 
-| Método | Rota | Acesso |
-|---|---|---|
-| `POST` | `/api/v1/auth/registrar` | público |
-| `POST` | `/api/v1/auth/login` | público |
-| `GET` | `/api/v1/publico/campanhas` | público |
-| `POST` | `/api/v1/campanhas` | GestorONG |
-| `GET` | `/api/v1/campanhas` | GestorONG |
-| `GET` | `/api/v1/campanhas/{id}` | GestorONG |
-| `POST` | `/api/v1/doacoes` | Doador |
-| `GET` | `/health/live` | público |
-| `GET` | `/health/ready` | público |
-| `GET` | `/metrics` | público |
+| Método | Rota | Acesso | Observação |
+|---|---|---|---|
+| `POST` | `/api/v1/auth/registrar` | público | |
+| `POST` | `/api/v1/auth/login` | público | |
+| `GET` | `/api/v1/publico/campanhas` | público | só campanhas ativas |
+| `POST` | `/api/v1/campanhas` | GestorONG | |
+| `GET` | `/api/v1/campanhas` | GestorONG | paginado, filtro por status |
+| `GET` | `/api/v1/campanhas/{id}` | GestorONG | |
+| `PUT` | `/api/v1/campanhas/{id}` | GestorONG | meta e início congelam após a primeira doação |
+| `PATCH` | `/api/v1/campanhas/{id}/status` | GestorONG | concluir ou cancelar |
+| `POST` | `/api/v1/doacoes` | Doador | |
+| `GET` | `/health/live` | público | |
+| `GET` | `/health/ready` | público | |
+| `GET` | `/metrics` | público | |
 
 `/health/live` não consulta dependência alguma — é o que a liveness probe usa.
 `/health/ready` verifica PostgreSQL, MongoDB e RabbitMQ, e é o que tira o pod do
