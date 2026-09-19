@@ -47,10 +47,6 @@ public static class ConfiguracaoDeMensageria
 
                 barramento.UseMessageRetry(retry =>
                 {
-                    // Falha permanente nao entra no retry. Uma campanha que nao
-                    // existe agora nao vai passar a existir em quinze segundos:
-                    // insistir so atrasa o descarte e segura a fila atras dela.
-                    // Ignorada aqui, a mensagem vai direto para <fila>_error.
                     retry.Ignore<FalhaPermanenteException>();
 
                     retry.Exponential(

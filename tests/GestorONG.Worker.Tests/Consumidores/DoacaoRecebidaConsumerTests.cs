@@ -94,7 +94,6 @@ public sealed class DoacaoRecebidaConsumerTests
 
         await harness.Bus.Publish(Evento(idDoacao));
 
-        // Espera o segundo consumo terminar antes de medir.
         Assert.Equal(2, await harness.Consumed.SelectAsync<DoacaoRecebidaEvent>().Count());
 
         Assert.Equal(2, ledger.TentativasDeRegistro);
@@ -144,7 +143,6 @@ public sealed class DoacaoRecebidaConsumerTests
         var consumido = harness.Consumed.Select<DoacaoRecebidaEvent>().First();
         Assert.IsType<FalhaPermanenteException>(consumido.Exception);
 
-        // A doacao nao e marcada como processada quando a campanha nao existe.
         Assert.Equal(0, doacoes.MarcadasComoProcessadas);
     }
 }

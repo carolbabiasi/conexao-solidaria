@@ -6,8 +6,6 @@ public sealed class ConflitoException : Exception
     {
     }
 
-    // A violacao de indice unico chega como DbUpdateException. Preservar a
-    // causa mantem o SQLSTATE no log sem expor nada na resposta.
     public ConflitoException(string mensagem, Exception excecaoInterna)
         : base(mensagem, excecaoInterna)
     {
