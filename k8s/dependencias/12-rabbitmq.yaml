@@ -1,4 +1,21 @@
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbitmq-config
+  namespace: conexao-solidaria
+data:
+  # O RabbitMQ dimensiona o watermark pela memoria do NO, e nao pelo limite do
+  # cgroup: num container de 1Gi ele calculava folga de ~10Gi, nunca estrangulava
+  # publicador nenhum, e quem encerrava a festa era o OOM killer - 123 reinicios
+  # em cinco dias. Com o valor absoluto abaixo do limite, ele bloqueia publicacao
+  # e volta ao normal em vez de morrer.
+  #
+  # A variavel RABBITMQ_VM_MEMORY_HIGH_WATERMARK faria o mesmo, mas foi
+  # descontinuada: o 4.x recusa a subir se ela estiver definida.
+  10-memoria.conf: |
+    vm_memory_high_watermark.absolute = 600MiB
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: rabbitmq-data
@@ -40,6 +57,9 @@ spec:
             - secretRef:
                 name: gestorong-secret
           volumeMounts:
+            - name: config
+              mountPath: /etc/rabbitmq/conf.d/10-memoria.conf
+              subPath: 10-memoria.conf
             - name: dados
               mountPath: /var/lib/rabbitmq
           readinessProbe:
@@ -60,11 +80,14 @@ spec:
               memory: 384Mi
             limits:
               cpu: 700m
-              memory: 768Mi
+              memory: 1Gi
       volumes:
         - name: dados
           persistentVolumeClaim:
             claimName: rabbitmq-data
+        - name: config
+          configMap:
+            name: rabbitmq-config
 ---
 apiVersion: v1
 kind: Service
