@@ -527,5 +527,5 @@ cAdvisor — se ele estiver em `403`, falta a permissão `nodes/proxy` no Cluste
 - [Diagrama de arquitetura](docs/diagramas/arquitetura.svg) — fonte SVG; o PNG ao lado é o que vai para o relatório e os slides
 - [Por que PostgreSQL e MongoDB](docs/escolha-dos-bancos.md) — justificativa dos dois bancos ligada ao código; [PDF](docs/escolha-dos-bancos.pdf) para a entrega
 - [Análise técnica e backlog](docs/BACKLOG.md) — riscos mapeados, decisões travadas e as 79 tarefas
-- [ADRs](docs/adr) — decisões arquiteturais registradas
+- [ADRs](docs/adr) — as cinco decisões que a banca costuma perguntar, com alternativas descartadas
 - [Issues](https://github.com/carolbabiasi/conexao-solidaria/issues) organizadas por épico e fase
