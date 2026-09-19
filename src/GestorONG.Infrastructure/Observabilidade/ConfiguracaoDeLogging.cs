@@ -28,8 +28,6 @@ public static class ConfiguracaoDeLogging
         var logger = new LoggerConfiguration()
             .MinimumLevel.Information()
 
-            // Ruído de framework fica em Warning. O terminal da demo precisa
-            // mostrar o que a aplicação fez, não cada consulta do EF Core.
             .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
             .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
             .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
@@ -41,9 +39,6 @@ public static class ConfiguracaoDeLogging
             .Enrich.WithProperty("servico", nomeDoServico)
             .Enrich.WithProperty("ambiente", builder.Environment.EnvironmentName)
 
-            // Redação de dado pessoal na saída, e não na origem: mesmo que
-            // alguém passe um CPF ou uma senha como propriedade de log por
-            // engano, o valor não chega ao console. Ver AUTH-07 e risco R9.
             .Destructure.With<RedatorDeDadoPessoal>()
 
             .WriteTo.Console(new CompactJsonFormatter())
@@ -53,10 +48,6 @@ public static class ConfiguracaoDeLogging
 
         builder.Logging.ClearProviders();
 
-        // Registrado nos servicos, e nao so no logging: o
-        // UseSerilogRequestLogging depende do DiagnosticContext, que vem
-        // por aqui. Com AddSerilog no Logging a aplicacao sobe e morre no
-        // primeiro request.
         builder.Services.AddSerilog(logger, dispose: true);
 
         return builder;

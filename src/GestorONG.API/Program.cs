@@ -31,8 +31,6 @@ await app.Services.MigrarESemearAsync();
 
 app.UseExceptionHandler();
 
-// Uma linha por requisicao HTTP, carregando o traceId. E a ponta da API
-// do par que a OBS-07 pede: o mesmo traceId reaparece no log do Worker.
 app.UseSerilogRequestLogging();
 
 app.MapOpenApi();

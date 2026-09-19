@@ -80,8 +80,6 @@ public sealed class DoacoesController(
 
         metricas.DoacoesRecebidas.Add(1);
 
-        // Ponta da API do rastro ponta a ponta: esta linha e a do Worker
-        // que soma a doacao carregam o mesmo traceId (OBS-07).
         logger.LogInformation(
             "Doacao {IdDoacao} aceita para a campanha {IdCampanha} no valor de {Valor}. " +
             "Publicada para processamento assincrono.",
