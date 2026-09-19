@@ -315,7 +315,7 @@ curl -s -X POST $BASE/api/v1/auth/registrar -H 'Content-Type: application/json' 
 
 O CPF passa por validação de dígito verificador, então não serve qualquer número.
 Se você já rodou este fluxo antes, troque o e-mail **e** o CPF — os dois têm índice
-único (ver [Troubleshooting](#registrar-devolve-500)).
+único (ver [Troubleshooting](#registrar-devolve-409)).
 
 **2. Autentique o gestor**
 
@@ -449,17 +449,20 @@ dotnet build GestorONG.slnx
 
 Depois `dotnet run` em cada terminal, sem corrida de build.
 
-### `registrar` devolve 500
+### `registrar` devolve 409
 
-Acontece quando o **CPF** já está cadastrado. E-mail duplicado é tratado e
-responde `409 Conflict`, mas o CPF tem índice único no banco e a violação sobe
-como erro não tratado — é uma lacuna conhecida da DATA-02.
+E-mail **ou** CPF já cadastrado. A resposta é deliberadamente genérica — *"Já
+existe um registro com os dados informados"* — porque dizer qual dos dois
+colidiu permitiria descobrir quais e-mails e CPFs estão na base.
 
 Use outro CPF válido, ou limpe a base:
 
 ```bash
 cd docker && docker compose down -v && docker compose up -d
 ```
+
+> O CPF passa por validação de dígito verificador. Um número inventado devolve
+> `400` com `"Cpf": ["CPF inválido."]`, que é coisa diferente do `409`.
 
 ### A API sobe e morre com erro de conexão
 
@@ -527,6 +530,6 @@ cAdvisor — se ele estiver em `403`, falta a permissão `nodes/proxy` no Cluste
 - [Diagrama de arquitetura](docs/diagramas/arquitetura.svg) — fonte SVG; o PNG ao lado é o que vai para o relatório e os slides
 - [Por que PostgreSQL e MongoDB](docs/escolha-dos-bancos.md) — justificativa dos dois bancos ligada ao código; [PDF](docs/escolha-dos-bancos.pdf) para a entrega
 - [Análise técnica e backlog](docs/BACKLOG.md) — riscos mapeados, decisões travadas e as 79 tarefas
-- [ADRs](docs/adr) — decisões arquiteturais registradas
+- [ADRs](docs/adr) — as cinco decisões que a banca costuma perguntar, com alternativas descartadas
 - [Coleção Postman](docs/postman) — fluxo da demo encadeado, com os negativos que provam as regras
 - [Issues](https://github.com/carolbabiasi/conexao-solidaria/issues) organizadas por épico e fase
