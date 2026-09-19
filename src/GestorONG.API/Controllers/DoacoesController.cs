@@ -33,6 +33,7 @@ public sealed class DoacoesController(
     IUnitOfWork unitOfWork,
     IPublishEndpoint publicador,
     MetricasDeNegocio metricas,
+    ILogger<DoacoesController> logger,
     TimeProvider tempo) : ControllerBase
 {
     [HttpPost]
@@ -78,6 +79,15 @@ public sealed class DoacoesController(
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken);
 
         metricas.DoacoesRecebidas.Add(1);
+
+        // Ponta da API do rastro ponta a ponta: esta linha e a do Worker
+        // que soma a doacao carregam o mesmo traceId (OBS-07).
+        logger.LogInformation(
+            "Doacao {IdDoacao} aceita para a campanha {IdCampanha} no valor de {Valor}. " +
+            "Publicada para processamento assincrono.",
+            doacao.Id,
+            doacao.IdCampanha,
+            doacao.Valor);
 
         return Accepted(new DoacaoAceitaResponse(
             doacao.Id,

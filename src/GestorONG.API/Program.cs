@@ -5,8 +5,11 @@ using GestorONG.Infrastructure.Mensageria;
 using GestorONG.Infrastructure.Observabilidade;
 using GestorONG.Infrastructure.Persistencia;
 using GestorONG.Infrastructure.Seguranca;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.UsarLoggingEstruturado("gestorong-api");
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi(opcoes =>
@@ -27,6 +30,10 @@ var app = builder.Build();
 await app.Services.MigrarESemearAsync();
 
 app.UseExceptionHandler();
+
+// Uma linha por requisicao HTTP, carregando o traceId. E a ponta da API
+// do par que a OBS-07 pede: o mesmo traceId reaparece no log do Worker.
+app.UseSerilogRequestLogging();
 
 app.MapOpenApi();
 app.UseSwaggerUI(opcoes =>

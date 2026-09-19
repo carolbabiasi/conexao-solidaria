@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 namespace GestorONG.Infrastructure.Observabilidade;
 
@@ -18,6 +19,13 @@ public static class ConfiguracaoDeObservabilidade
 
         servicos.AddOpenTelemetry()
             .ConfigureResource(recurso => recurso.AddService(nomeDoServico))
+            // Tracing sem exportador: o objetivo aqui e existir um Activity
+            // em curso, para o TraceId entrar no log. O MassTransit propaga
+            // esse contexto nos headers da mensagem, entao o Worker continua
+            // o mesmo trace que comecou na requisicao HTTP.
+            .WithTracing(tracing => tracing
+                .AddAspNetCoreInstrumentation()
+                .AddSource("MassTransit"))
             .WithMetrics(metricas => metricas
                 .AddAspNetCoreInstrumentation()
                 .AddRuntimeInstrumentation()

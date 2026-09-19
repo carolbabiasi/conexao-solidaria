@@ -6,6 +6,8 @@ using GestorONG.Worker.Consumidores;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.UsarLoggingEstruturado("gestorong-worker");
+
 builder.Services.AdicionarInfraestrutura(builder.Configuration);
 
 builder.Services.AdicionarMensageria(

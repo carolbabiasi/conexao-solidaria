@@ -401,6 +401,24 @@ em `/metrics`:
 
 A diferença entre `recebidas` e `processadas` é o lag da fila em tempo real.
 
+### Seguindo uma doação de ponta a ponta
+
+Os logs saem em JSON no console — formato que o Kubernetes coleta — e cada
+linha carrega `traceId`. O MassTransit propaga esse contexto nos headers da
+mensagem, então **o mesmo `traceId` aparece na API e no Worker** para a mesma
+doação:
+
+```bash
+kubectl logs -n conexao-solidaria -l app=gestorong-api    | grep <traceId>
+kubectl logs -n conexao-solidaria -l app=gestorong-worker | grep <traceId>
+```
+
+Cada linha traz também `servico` e `ambiente`, para separar as duas origens
+quando os logs estiverem no mesmo lugar.
+
+CPF, senha e token nunca aparecem: a API não loga corpo de requisição, e uma
+política de redação corta propriedades com esses nomes antes de escrever.
+
 No Caminho B o dashboard **Conexao Solidaria** já vem provisionado no Grafana, com
 10 painéis: doações recebidas e processadas, lag da fila, redeliveries descartadas,
 requisições HTTP/s, latência p95, CPU e memória por pod, taxa de processamento e
