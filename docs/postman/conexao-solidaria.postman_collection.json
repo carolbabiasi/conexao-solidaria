@@ -1,0 +1,415 @@
+{
+  "info": {
+    "_postman_id": "6b1f3a52-0c4d-4d21-9a5e-7b2c9d4e1f80",
+    "name": "Conexão Solidária",
+    "description": "Fluxo completo da demo, encadeado: nenhum token é copiado à mão.\n\nA pasta 1 vai do login do gestor até o painel público refletir a doação. A pasta 2 prova as regras de negócio com requisições que devem falhar.\n\nSelecione o environment (Local ou Kubernetes) e use Run collection. Requer a API no ar e, para o painel refletir o valor, o Worker também.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "tentativaPainel", "value": "0" }
+  ],
+  "item": [
+    {
+      "name": "1 · Fluxo da demo",
+      "item": [
+        {
+          "name": "Login do gestor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "",
+                  "const corpo = pm.response.json();",
+                  "",
+                  "pm.test('perfil e GestorONG', () => pm.expect(corpo.role).to.eql('GestorONG'));",
+                  "",
+                  "// O token vai para a variavel e e usado pelos proximos requests.",
+                  "// E isto que o criterio de aceite chama de 'nenhum token copiado a mao'.",
+                  "pm.collectionVariables.set('tokenGestor', corpo.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{emailGestor}}\",\n  \"senha\": \"{{senhaGestor}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/login",
+            "description": "Primeiro passo de tudo. O accessToken da resposta fica guardado em {{tokenGestor}}."
+          }
+        },
+        {
+          "name": "Criar campanha",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Datas relativas ao momento da execucao: uma campanha com data fixa",
+                  "// no arquivo venceria, e a colecao passaria a falhar sozinha com o tempo.",
+                  "const agora = new Date();",
+                  "const fim = new Date(agora.getTime() + 90 * 24 * 60 * 60 * 1000);",
+                  "pm.collectionVariables.set('dataInicio', agora.toISOString());",
+                  "pm.collectionVariables.set('dataFim', fim.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "",
+                  "const corpo = pm.response.json();",
+                  "",
+                  "pm.test('nasce sem nada arrecadado', () => pm.expect(Number(corpo.valorArrecadado)).to.eql(0));",
+                  "",
+                  "pm.collectionVariables.set('idCampanha', corpo.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenGestor}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Cestas basicas de inverno\",\n  \"descricao\": \"Arrecadacao para 200 familias.\",\n  \"dataInicio\": \"{{dataInicio}}\",\n  \"dataFim\": \"{{dataFim}}\",\n  \"metaFinanceira\": 10000.00,\n  \"status\": 1\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/campanhas",
+            "description": "Exclusivo do GestorONG. O id da campanha fica em {{idCampanha}} e alimenta a doação.\n\nO status vai numérico (1 Ativa, 2 Concluída, 3 Cancelada): não há JsonStringEnumConverter configurado, então a string quebraria com 400."
+          }
+        },
+        {
+          "name": "Registrar doador",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// 201 na primeira execucao, 409 nas seguintes. Aceitar os dois e o que",
+                  "// torna a colecao re-executavel sem limpar o banco antes - e o 409 aqui",
+                  "// ja e a prova de que o indice unico esta fazendo o trabalho dele.",
+                  "pm.test('201 na primeira vez, 409 nas seguintes', () => {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 409]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    pm.test('nasce com perfil Doador', () => {",
+                  "        pm.expect(pm.response.json().role).to.eql('Doador');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomeCompleto\": \"Maria Doadora\",\n  \"email\": \"{{emailDoador}}\",\n  \"cpf\": \"{{cpfDoador}}\",\n  \"senha\": \"{{senhaDoador}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/registrar",
+            "description": "Cadastro público. Todo usuário criado aqui nasce Doador — não há endpoint para criar outro gestor.\n\nO CPF passa por validação de dígito verificador, então não serve qualquer número."
+          }
+        },
+        {
+          "name": "Login do doador",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "",
+                  "const corpo = pm.response.json();",
+                  "",
+                  "pm.test('perfil e Doador', () => pm.expect(corpo.role).to.eql('Doador'));",
+                  "",
+                  "pm.collectionVariables.set('tokenDoador', corpo.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{emailDoador}}\",\n  \"senha\": \"{{senhaDoador}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/login",
+            "description": "Segundo token da demo. Guardado separado do token do gestor, em {{tokenDoador}}, porque os dois perfis fazem coisas diferentes."
+          }
+        },
+        {
+          "name": "Doar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// 202, e nao 201: a API aceita a intencao e publica o evento, mas nao",
+                  "// atualiza o valor arrecadado. Quem soma e o Worker.",
+                  "pm.test('202 Accepted', () => pm.response.to.have.status(202));",
+                  "",
+                  "const corpo = pm.response.json();",
+                  "",
+                  "pm.test('entra como Pendente', () => pm.expect(corpo.status).to.eql('Pendente'));",
+                  "",
+                  "pm.collectionVariables.set('idDoacao', corpo.idDoacao);",
+                  "pm.collectionVariables.set('tentativaPainel', 0);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenDoador}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idCampanha\": \"{{idCampanha}}\",\n  \"valorDoacao\": 125.50\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/doacoes",
+            "description": "O coração da demo. Responde 202 porque o processamento é assíncrono: a doação e a mensagem são gravadas na mesma transação, e o Worker soma depois."
+          }
+        },
+        {
+          "name": "Painel publico",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Espera antes de consultar. O Postman nao tem sleep, e sem folga esta",
+                  "// requisicao corre contra o Worker e falha por ser rapida demais.",
+                  "const ate = Date.now() + 1200;",
+                  "while (Date.now() < ate) { /* aguarda */ }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "",
+                  "const idCampanha = pm.collectionVariables.get('idCampanha');",
+                  "const campanha = pm.response.json().find(c => c.id === idCampanha);",
+                  "",
+                  "pm.test('a campanha aparece no painel publico', () => pm.expect(campanha).to.not.be.undefined);",
+                  "",
+                  "const MAX_TENTATIVAS = 5;",
+                  "const tentativa = Number(pm.collectionVariables.get('tentativaPainel') || 0);",
+                  "",
+                  "if (campanha && Number(campanha.valorArrecadado) > 0) {",
+                  "    pm.collectionVariables.set('tentativaPainel', 0);",
+                  "    pm.test('o Worker processou e o valor subiu', () => {",
+                  "        pm.expect(Number(campanha.valorArrecadado)).to.eql(125.50);",
+                  "    });",
+                  "} else if (tentativa < MAX_TENTATIVAS) {",
+                  "    // Ainda nao processou: repete esta mesma requisicao. E o que permite",
+                  "    // o Run collection provar o resultado assincrono sem intervencao.",
+                  "    pm.collectionVariables.set('tentativaPainel', tentativa + 1);",
+                  "    postman.setNextRequest('Painel publico');",
+                  "} else {",
+                  "    pm.test('o Worker processou e o valor subiu', () => {",
+                  "        pm.expect.fail('valor continua zerado apos ' + MAX_TENTATIVAS + ' tentativas - o Worker esta rodando?');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/publico/campanhas",
+            "description": "Sem autenticação. Repete a consulta até cinco vezes enquanto o valor estiver zerado, porque o Worker leva alguns segundos — é assim que o Run collection consegue provar o fluxo assíncrono inteiro."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 · Regras de negócio",
+      "description": "Requisições que devem falhar. Cada uma demonstra uma regra que o código impõe.",
+      "item": [
+        {
+          "name": "Cadastro repetido devolve 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409 Conflict', () => pm.response.to.have.status(409));",
+                  "",
+                  "// A mensagem nao diz qual campo colidiu, de proposito: dizer permitiria",
+                  "// descobrir quais e-mails e CPFs ja estao cadastrados.",
+                  "pm.test('nao revela qual campo colidiu', () => {",
+                  "    const detalhe = pm.response.json().detail || '';",
+                  "    pm.expect(detalhe.toLowerCase()).to.not.include('cpf');",
+                  "    pm.expect(detalhe.toLowerCase()).to.not.include('mail');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomeCompleto\": \"Maria Doadora\",\n  \"email\": \"{{emailDoador}}\",\n  \"cpf\": \"{{cpfDoador}}\",\n  \"senha\": \"{{senhaDoador}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/registrar",
+            "description": "Mesmo cadastro da pasta 1. E-mail e CPF têm índice único no banco, e a violação é traduzida em 409."
+          }
+        },
+        {
+          "name": "Doador criando campanha devolve 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// 403 e nao 401: o token e valido, o perfil e que nao autoriza.",
+                  "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenDoador}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Campanha que nao deve existir\",\n  \"descricao\": \"Criada com token de Doador.\",\n  \"dataInicio\": \"{{dataInicio}}\",\n  \"dataFim\": \"{{dataFim}}\",\n  \"metaFinanceira\": 1000.00,\n  \"status\": 1\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/campanhas",
+            "description": "RBAC em ação: só o perfil GestorONG cria campanhas."
+          }
+        },
+        {
+          "name": "Campanha com data no passado devolve 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "",
+                  "pm.test('aponta o campo violado', () => {",
+                  "    pm.expect(pm.response.json().violacoes).to.have.property('DataFim');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenGestor}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Campanha vencida\",\n  \"descricao\": \"Data de termino no passado.\",\n  \"dataInicio\": \"2020-01-01T00:00:00Z\",\n  \"dataFim\": \"2020-12-31T23:59:59Z\",\n  \"metaFinanceira\": 1000.00,\n  \"status\": 1\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/campanhas",
+            "description": "Regra de domínio, não de formato: a validação vem da entidade Campanha e volta em ProblemDetails com a lista de violações."
+          }
+        },
+        {
+          "name": "Criar campanha cancelada (preparo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "",
+                  "pm.test('nasce cancelada', () => pm.expect(pm.response.json().status).to.eql('Cancelada'));",
+                  "",
+                  "pm.collectionVariables.set('idCampanhaCancelada', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenGestor}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Campanha cancelada\",\n  \"descricao\": \"Existe para provar que doacao em campanha cancelada e recusada.\",\n  \"dataInicio\": \"{{dataInicio}}\",\n  \"dataFim\": \"{{dataFim}}\",\n  \"metaFinanceira\": 1000.00,\n  \"status\": 3\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/campanhas",
+            "description": "Preparo do negativo seguinte. Nasce já cancelada porque ainda não existe endpoint para mudar status (CAMP-03, #30)."
+          }
+        },
+        {
+          "name": "Doação em campanha cancelada devolve 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "",
+                  "pm.test('explica que a campanha esta cancelada', () => {",
+                  "    const violacoes = pm.response.json().violacoes;",
+                  "    pm.expect(violacoes).to.have.property('IdCampanha');",
+                  "    pm.expect(String(violacoes.IdCampanha)).to.include('cancelada');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenDoador}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idCampanha\": \"{{idCampanhaCancelada}}\",\n  \"valorDoacao\": 10.00\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/doacoes",
+            "description": "A recusa vem do domínio, antes de qualquer mensagem ser publicada: campanha cancelada não aceita doações."
+          }
+        }
+      ]
+    }
+  ]
+}
