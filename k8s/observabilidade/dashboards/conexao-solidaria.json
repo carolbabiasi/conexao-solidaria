@@ -12,7 +12,7 @@
       "type": "stat",
       "title": "Doacoes recebidas (API)",
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "unit": "short" }, "overrides": [] },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "unit": "short", "noValue": "0" }, "overrides": [] },
       "targets": [
         { "expr": "sum(doacoes_recebidas_total)", "legendFormat": "recebidas", "refId": "A" }
       ]
@@ -22,7 +22,7 @@
       "type": "stat",
       "title": "Doacoes processadas (Worker)",
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "unit": "short" }, "overrides": [] },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "unit": "short", "noValue": "0" }, "overrides": [] },
       "targets": [
         { "expr": "sum(doacoes_processadas_total)", "legendFormat": "processadas", "refId": "A" }
       ]
@@ -32,7 +32,7 @@
       "type": "stat",
       "title": "Lag da fila (recebidas - processadas)",
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "unit": "short" }, "overrides": [] },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "unit": "short", "noValue": "0" }, "overrides": [] },
       "targets": [
         {
           "expr": "sum(doacoes_recebidas_total) - sum(doacoes_processadas_total)",
@@ -46,7 +46,7 @@
       "type": "stat",
       "title": "Redeliveries descartadas (idempotencia)",
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "unit": "short" }, "overrides": [] },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "unit": "short", "noValue": "0" }, "overrides": [] },
       "targets": [
         { "expr": "sum(doacoes_duplicadas_descartadas_total)", "legendFormat": "descartadas", "refId": "A" }
       ]
