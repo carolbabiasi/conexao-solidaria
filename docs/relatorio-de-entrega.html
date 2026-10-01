@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Relatório de entrega — Conexão Solidária</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Manrope", "Segoe UI", system-ui, sans-serif;
+    color: #1E293B;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .pagina {
+    width: 210mm; height: 297mm;
+    page-break-after: always;
+    position: relative; overflow: hidden;
+  }
+  .pagina:last-child { page-break-after: auto; }
+
+  /* ---------- capa ---------- */
+  .capa {
+    background: #0F172A;
+    padding: 26mm 22mm;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .marca-dagua { position: absolute; right: -28mm; top: 60mm; opacity: .06; line-height: 0; }
+  .lockup { position: relative; display: flex; align-items: center; gap: 7mm; }
+  .selo {
+    width: 20mm; height: 20mm; flex-shrink: 0; border-radius: 6mm;
+    background: rgba(74,222,128,.09); border: .4mm solid rgba(74,222,128,.30);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ong-nome { font-size: 15pt; font-weight: 700; color: #F1F5F9; letter-spacing: -.01em; }
+  .ong-tipo { font-size: 7.5pt; font-weight: 600; color: #94A3B8; letter-spacing: .2em; margin-top: 2mm; }
+
+  .hero { position: relative; }
+  .eyebrow { display: flex; align-items: center; gap: 5mm; margin-bottom: 7mm; }
+  .eyebrow .traco { width: 14mm; height: .8mm; background: #4ADE80; }
+  .eyebrow span { font-size: 8.5pt; font-weight: 700; color: #4ADE80; letter-spacing: .26em; }
+  .titulo {
+    margin: 0; font-family: "Fraunces", Georgia, serif; font-weight: 600;
+    font-size: 54pt; line-height: .95; letter-spacing: -.03em; color: #F8FAFC;
+  }
+  .sub { margin: 7mm 0 0; font-size: 12pt; font-weight: 500; color: #CBD5E1; line-height: 1.5; max-width: 125mm; }
+  .pills { display: flex; flex-wrap: wrap; gap: 2.5mm; margin-top: 9mm; }
+  .pill {
+    padding: 2mm 4.5mm; border-radius: 99mm; border: .3mm solid #334155;
+    font-size: 8pt; font-weight: 600; color: #94A3B8;
+  }
+
+  .rodape-capa { position: relative; }
+  .linha { height: .3mm; background: #1E293B; margin-bottom: 7mm; }
+  .meta { display: flex; justify-content: space-between; align-items: flex-end; }
+  .meta-bloco { font-size: 9pt; color: #94A3B8; }
+  .meta-bloco strong { display: block; color: #F1F5F9; font-size: 11pt; font-weight: 700; margin-top: 1.5mm; }
+
+  /* ---------- miolo ---------- */
+  .conteudo { padding: 20mm 22mm; background: #fff; }
+  h2 {
+    font-family: "Manrope", sans-serif; font-size: 11pt; font-weight: 700;
+    letter-spacing: .14em; text-transform: uppercase; color: #0F172A;
+    margin: 0 0 4mm; padding-bottom: 2.5mm; border-bottom: .5mm solid #4ADE80;
+  }
+  h2 + * { margin-top: 0; }
+  section { margin-bottom: 11mm; }
+  section:last-child { margin-bottom: 0; }
+  p { font-size: 10pt; line-height: 1.6; color: #334155; margin: 0 0 3.5mm; }
+  p:last-child { margin-bottom: 0; }
+  strong { color: #0F172A; }
+
+  table { width: 100%; border-collapse: collapse; }
+  td { font-size: 9.5pt; line-height: 1.5; color: #334155; padding: 2.2mm 0; vertical-align: top; border-bottom: .2mm solid #E2E8F0; }
+  tr:last-child td { border-bottom: none; }
+  td.rotulo { width: 52mm; font-weight: 700; color: #0F172A; padding-right: 5mm; }
+  td.mono { font-family: "Consolas", "Courier New", monospace; font-size: 8.5pt; }
+  a { color: #0369A1; text-decoration: none; word-break: break-all; }
+
+  .problema { margin-bottom: 5mm; }
+  .problema:last-child { margin-bottom: 0; }
+  .problema h3 { font-size: 10pt; font-weight: 700; color: #0F172A; margin: 0 0 1.5mm; }
+  .problema p { font-size: 9.5pt; margin: 0; }
+
+  .rodape-pagina {
+    position: absolute; bottom: 12mm; left: 22mm; right: 22mm;
+    display: flex; justify-content: space-between;
+    font-size: 8pt; color: #94A3B8; border-top: .2mm solid #E2E8F0; padding-top: 3mm;
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== CAPA ===================== -->
+<div class="pagina capa">
+
+  <div class="marca-dagua">
+    <svg width="190mm" height="190mm" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <path d="M32 53.6C32 53.6 10 39.6 10 25.6C10 18.4 15.8 12.6 23 12.6C27.4 12.6 30.4 14.8 32 17C33.6 14.8 36.6 12.6 41 12.6C48.2 12.6 54 18.4 54 25.6C54 39.6 32 53.6 32 53.6Z" stroke="#4ADE80" stroke-width="2" stroke-linejoin="round"></path>
+      <path d="M23 27L41 27M23 27L32 38M41 27L32 38" stroke="#4ADE80" stroke-width="1.1" stroke-linecap="round"></path>
+      <circle cx="23" cy="27" r="3" fill="#4ADE80"></circle>
+      <circle cx="41" cy="27" r="3" fill="#4ADE80"></circle>
+      <circle cx="32" cy="38" r="3" fill="#4ADE80"></circle>
+    </svg>
+  </div>
+
+  <div class="lockup">
+    <div class="selo">
+      <svg width="12mm" height="12mm" viewBox="0 0 64 64" fill="none" role="img" aria-label="Logo da ONG Esperança Solidária">
+        <path d="M32 53.6C32 53.6 10 39.6 10 25.6C10 18.4 15.8 12.6 23 12.6C27.4 12.6 30.4 14.8 32 17C33.6 14.8 36.6 12.6 41 12.6C48.2 12.6 54 18.4 54 25.6C54 39.6 32 53.6 32 53.6Z" stroke="#4ADE80" stroke-width="3.2" stroke-linejoin="round"></path>
+        <path d="M23 27L41 27M23 27L32 38M41 27L32 38" stroke="#A78BFA" stroke-width="1.8" stroke-linecap="round"></path>
+        <circle cx="23" cy="27" r="3.6" fill="#A78BFA"></circle>
+        <circle cx="41" cy="27" r="3.6" fill="#A78BFA"></circle>
+        <circle cx="32" cy="38" r="3.6" fill="#A78BFA"></circle>
+      </svg>
+    </div>
+    <div>
+      <div class="ong-nome">Esperança Solidária</div>
+      <div class="ong-tipo">ORGANIZAÇÃO NÃO GOVERNAMENTAL</div>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="eyebrow"><div class="traco"></div><span>RELATÓRIO DE ENTREGA</span></div>
+    <h1 class="titulo">Conexão<br>Solidária</h1>
+    <p class="sub">Plataforma digital para gestão de doadores e campanhas, com processamento assíncrono de doações.</p>
+    <div class="pills">
+      <span class="pill">.NET 10</span>
+      <span class="pill">Kubernetes</span>
+      <span class="pill">RabbitMQ</span>
+      <span class="pill">PostgreSQL</span>
+      <span class="pill">MongoDB</span>
+    </div>
+  </div>
+
+  <div class="rodape-capa">
+    <div class="linha"></div>
+    <div class="meta">
+      <div class="meta-bloco">Hackathon 11NETT · FIAP<strong>Grupo 3</strong></div>
+      <div class="meta-bloco" style="text-align:right">Caroline Bartholo de Biasi<strong>30 / 09 / 2026</strong></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===================== PÁGINA 2 ===================== -->
+<div class="pagina conteudo">
+
+  <section>
+    <h2>Grupo</h2>
+    <table>
+      <tr><td class="rotulo">Nome do grupo</td><td>Grupo 3</td></tr>
+      <tr><td class="rotulo">Data de entrega</td><td>30 de setembro de 2026</td></tr>
+      <tr><td class="rotulo">Participante</td><td>Caroline Bartholo de Biasi &nbsp;·&nbsp; Discord: <span class="mono">carolbiasi</span></td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Links</h2>
+    <table>
+      <tr><td class="rotulo">Vídeo de demonstração</td><td class="mono"><a href="https://youtu.be/f_-pJnD3p98">https://youtu.be/f_-pJnD3p98</a><br><span style="color:#64748B">não listado</span></td></tr>
+      <tr><td class="rotulo">Repositório</td><td class="mono"><a href="https://github.com/carolbabiasi/conexao-solidaria">https://github.com/carolbabiasi/conexao-solidaria</a></td></tr>
+      <tr><td class="rotulo">Documentação</td><td class="mono"><a href="https://github.com/carolbabiasi/conexao-solidaria#readme">https://github.com/carolbabiasi/conexao-solidaria#readme</a><br><span style="color:#64748B">README com o passo a passo de execução</span></td></tr>
+      <tr><td class="rotulo">Escolha dos bancos</td><td class="mono"><a href="https://github.com/carolbabiasi/conexao-solidaria/blob/main/docs/escolha-dos-bancos.pdf">github.com/carolbabiasi/conexao-solidaria/blob/main/docs/escolha-dos-bancos.pdf</a></td></tr>
+      <tr><td class="rotulo">Decisões de arquitetura</td><td class="mono"><a href="https://github.com/carolbabiasi/conexao-solidaria/tree/main/docs/adr">github.com/carolbabiasi/conexao-solidaria/tree/main/docs/adr</a></td></tr>
+      <tr><td class="rotulo">Diagrama</td><td class="mono"><a href="https://github.com/carolbabiasi/conexao-solidaria/blob/main/docs/diagramas/arquitetura.png">github.com/carolbabiasi/conexao-solidaria/blob/main/docs/diagramas/arquitetura.png</a></td></tr>
+      <tr><td class="rotulo">Coleção Postman</td><td class="mono"><a href="https://github.com/carolbabiasi/conexao-solidaria/tree/main/docs/postman">github.com/carolbabiasi/conexao-solidaria/tree/main/docs/postman</a></td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Resumo da solução</h2>
+    <p>A ONG Esperança Solidária gerencia doadores e campanhas manualmente, o que limita seu crescimento. O MVP entrega uma plataforma com foco em escalabilidade, observabilidade e automação.</p>
+    <p>A decisão central da arquitetura atende ao requisito do edital de que a API <strong>não</strong> deve atualizar o valor arrecadado da campanha diretamente. Quando chega uma doação, a API grava a intenção e responde <strong>202 Accepted</strong>. O valor arrecadado é atualizado por um Worker independente, que consome a fila de mensageria — ele é o único escritor desse campo.</p>
+  </section>
+
+  <div class="rodape-pagina"><span>Conexão Solidária · Relatório de entrega</span><span>Grupo 3 · Hackathon 11NETT</span></div>
+</div>
+
+<!-- ===================== PÁGINA 3 ===================== -->
+<div class="pagina conteudo">
+
+  <section>
+    <h2>Componentes</h2>
+    <table>
+      <tr><td class="rotulo">GestorONG.API</td><td>Autenticação JWT, campanhas, doações e painel público. 2 réplicas</td></tr>
+      <tr><td class="rotulo">GestorONG.Worker</td><td>Consumer idempotente do <span class="mono">DoacaoRecebidaEvent</span>. 2 réplicas</td></tr>
+      <tr><td class="rotulo">PostgreSQL</td><td>Estado transacional: usuários, campanhas, doações e o outbox</td></tr>
+      <tr><td class="rotulo">MongoDB</td><td>Ledger append-only de doações processadas, com índice único</td></tr>
+      <tr><td class="rotulo">RabbitMQ</td><td>Broker de mensageria, com retry exponencial e DLQ</td></tr>
+      <tr><td class="rotulo">Prometheus e Grafana</td><td>Coleta de métricas e dashboard provisionado, com 10 painéis</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Os três problemas tratados</h2>
+    <div class="problema">
+      <h3>Dupla escrita entre banco e broker</h3>
+      <p>Se a API grava a doação e só depois publica o evento, uma das duas operações pode falhar sozinha. A mitigação é o <strong>Transactional Outbox</strong>: doação e evento entram na mesma transação do PostgreSQL, e o bus entrega depois.</p>
+    </div>
+    <div class="problema">
+      <h3>Reentrega inflando o valor arrecadado</h3>
+      <p>A entrega do broker é <em>pelo menos uma vez</em>. A trava é um <strong>índice único</strong> por <span class="mono">idDoacao</span> no ledger do MongoDB: o Worker tenta inserir e deixa o banco decidir. Se o insert falha por chave duplicada, é reentrega, e a mensagem é descartada sem somar.</p>
+    </div>
+    <div class="problema">
+      <h3>Lost update entre as réplicas do Worker</h3>
+      <p>Duas réplicas lendo e gravando o mesmo total fariam uma doação desaparecer. O incremento é um <strong>UPDATE atômico</strong> no PostgreSQL, nunca read-modify-write.</p>
+    </div>
+  </section>
+
+  <div class="rodape-pagina"><span>Conexão Solidária · Relatório de entrega</span><span>Grupo 3 · Hackathon 11NETT</span></div>
+</div>
+
+<!-- ===================== PÁGINA 4 ===================== -->
+<div class="pagina conteudo">
+
+  <section>
+    <h2>Entregáveis</h2>
+    <table>
+      <tr><td class="rotulo">Código-fonte</td><td class="mono">src/ &nbsp;<span style="font-family:Manrope">— 6 projetos, arquitetura em camadas</span></td></tr>
+      <tr><td class="rotulo">Testes</td><td class="mono">tests/ &nbsp;<span style="font-family:Manrope">— 111 testes de unidade, executados no CI</span></td></tr>
+      <tr><td class="rotulo">Manifestos Kubernetes</td><td class="mono">k8s/ &nbsp;<span style="font-family:Manrope">— 26 recursos, com deploy e teardown</span></td></tr>
+      <tr><td class="rotulo">Pipeline de CI</td><td class="mono">.github/workflows/ci.yml</td></tr>
+      <tr><td class="rotulo">Imagens publicadas</td><td class="mono">ghcr.io/carolbabiasi/conexao-solidaria-api<br>ghcr.io/carolbabiasi/conexao-solidaria-worker</td></tr>
+      <tr><td class="rotulo">Documentação</td><td class="mono">README.md</td></tr>
+      <tr><td class="rotulo">Diagrama</td><td class="mono">docs/diagramas/ &nbsp;<span style="font-family:Manrope">— SVG versionado e PNG</span></td></tr>
+      <tr><td class="rotulo">Escolha dos bancos</td><td class="mono">docs/escolha-dos-bancos.pdf</td></tr>
+      <tr><td class="rotulo">ADRs</td><td class="mono">docs/adr/ &nbsp;<span style="font-family:Manrope">— 6 registros de decisão</span></td></tr>
+      <tr><td class="rotulo">Coleção Postman</td><td class="mono">docs/postman/ &nbsp;<span style="font-family:Manrope">— fluxo encadeado e 2 environments</span></td></tr>
+    </table>
+  </section>
+
+  <div class="rodape-pagina"><span>Conexão Solidária · Relatório de entrega</span><span>Grupo 3 · Hackathon 11NETT</span></div>
+</div>
+
+</body>
+</html>
